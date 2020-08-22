@@ -3,6 +3,7 @@
 #include <cuda_runtime.h>
 #include <oneweekend/vec3.hpp>
 #include <oneweekend/color.hpp>
+#include <oneweekend/ray.hpp>
 
 void cuda_control(cudaError_t res, const char *const fn,
         const char * const f, const int l){
@@ -20,7 +21,14 @@ void cuda_control(cudaError_t res, const char *const fn,
 
 #define CUDA_CONTROL(v) cuda_control((v), #v, __FILE__, __LINE__)
 
-__global__ void render(Vec3 *fb, int maximum_x, int maximum_y){
+__device__ Color ray_color(const Ray & r){
+    Vec3 udir = to_unit(r.direction());
+    float t = 0.5f * (udir.y() + 1.0f);
+    return (1.0f-t)*Vec3(1.0f)+ t*Vec3(0.5f, 0.7f, 1.0f);
+}
+
+__global__ void render(Vec3 *fb, int maximum_x, int maximum_y,
+        Vec3 lower_left, Vec3 horizontal, Vec3 vertical, Vec3 origin){
     int i = threadIdx.x + blockIdx.x  * blockDim.x;
     int j = threadIdx.y + blockIdx.y  * blockDim.y;
 
@@ -28,7 +36,10 @@ __global__ void render(Vec3 *fb, int maximum_x, int maximum_y){
         return;
     }
     int pixel_index = j * maximum_x * 3 + i;
-    fb[pixel_index] = Vec3(float(i) / maximum_x, float(j)/maximum_y, 0.1f);
+    float u = float(i) / float(maximum_x);
+    float v = float(j) / float(maximum_y);
+    Ray r(origin, lower_left + u * horizontal + v * vertical);
+    fb[pixel_index] = ray_color(r);
 }
 
 int main(){
@@ -63,7 +74,11 @@ int main(){
     dim3 blocks(WIDTH / BLOCK_WIDTH + 1,
             HEIGHT / BLOCK_HEIGHT + 1);
     dim3 threads(BLOCK_WIDTH, BLOCK_HEIGHT); 
-    render<<<blocks, threads>>>(fb, WIDTH, HEIGHT);
+    render<<<blocks, threads>>>(fb, WIDTH, HEIGHT,
+                                Vec3(-2.0f, -1.0f, -1.0f),
+                                Vec3(4.0f, 0.0f, 0.0f),
+                                Vec3(0.0f, 2.0f, 0.0f),
+                                Vec3(0.0f, 0.0f, 0.0f));
     CUDA_CONTROL(cudaGetLastError());
     CUDA_CONTROL(cudaDeviceSynchronize());
     biter = clock();

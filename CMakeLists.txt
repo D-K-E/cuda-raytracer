@@ -8,21 +8,25 @@ set(CMAKE_CXX_COMPILER "clang")
 include_directories(
     "./include/"
 )
-add_executable(main_cuda.out
+add_executable(
+    main_cuda.out
     "src/oneweekend/main.cu"
-    )
+)
 
-add_executable(main_c.out
+add_executable(
+    main_c.out
     "src/main.cpp"
-    )
+)
+
+find_package(CUDA REQUIRED)
+
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(CMAKE_CXX_FLAGS "-lstdc++ -ldl -ggdb -Wall -Wextra -pedantic -Wextra-tokens")
 
 
-
-set (CMAKE_CXX_FLAGS "-lstdc++ -ldl -ggdb -Wall -Wextra -pedantic -Wextra-tokens --std=c++11")
-
-
-
-set(CMAKE_CUDA_FLAGS "-ccbin clang -g -gencode arch=compute_50,code=sm_50 --std=c++11")
+set(CMAKE_CUDA_FLAGS "-ccbin clang++ -g -gencode arch=compute_50,code=sm_50")
 
 #target_compile_features(main PUBLIC cxx_std_11)
 
