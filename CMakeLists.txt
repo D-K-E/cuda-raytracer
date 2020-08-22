@@ -3,6 +3,8 @@ project("CudaIsinIzleyici" LANGUAGES CXX CUDA)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+set(CMAKE_CXX_COMPILER "clang")
+
 include_directories(
     "./include/"
 )
@@ -24,9 +26,9 @@ set(CMAKE_CUDA_FLAGS "-ccbin clang -g -gencode arch=compute_50,code=sm_50")
 
 #target_compile_features(main PUBLIC cxx_std_11)
 
-#set_target_properties( main_cuda.out
-#    PROPERTIES CUDA_SEPARABLE_COMPILATION ON 
-#                     )
+set_target_properties( main_cuda.out
+    PROPERTIES CUDA_SEPARABLE_COMPILATION ON 
+                     )
 set_target_properties(main_cuda.out
     PROPERTIES LINKER_LANGUAGE CUDA)
 

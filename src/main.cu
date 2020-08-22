@@ -1,74 +1,88 @@
-// by roger allen
 #include <iostream>
 #include <time.h>
 #include <cuda_runtime.h>
 
-// limited version of checkCudaErrors from helper_cuda.h in CUDA examples
-#define checkCudaErrors(val) check_cuda( (val), #val, __FILE__, __LINE__ )
-
-void check_cuda(cudaError_t result, char const *const func, const char *const file, int const line) {
-    if (result) {
-        std::cerr << "CUDA error = " << static_cast<unsigned int>(result) << " at " <<
-            file << ":" << line << " '" << func << "' \n";
-        // Make sure we call CUDA Device Reset before exiting
+void cuda_kontrol(cudaError_t sonuc, const char *const fn,
+        const char * const dosya, const int satir){
+    if (sonuc != cudaSuccess){
+        std::cerr << "CUDA HATASI :: " 
+            << static_cast<unsigned int>(sonuc)
+            << " "
+            << cudaGetErrorName(sonuc)
+            << " dosya: " << dosya << " satir: " << satir 
+            << " fonksiyon: " << fn << std::endl;
         cudaDeviceReset();
         exit(99);
     }
 }
 
-__global__ void render(float *fb, int max_x, int max_y) {
-    int i = threadIdx.x + blockIdx.x * blockDim.x;
-    int j = threadIdx.y + blockIdx.y * blockDim.y;
-    if((i >= max_x) || (j >= max_y)) return;
-    int pixel_index = j*max_x*3 + i*3;
-    fb[pixel_index + 0] = float(i) / max_x;
-    fb[pixel_index + 1] = float(j) / max_y;
-    fb[pixel_index + 2] = 0.2;
+#define CUDA_HATA_KONTROL(deger) cuda_kontrol((deger), #deger, __FILE__, __LINE__)
+
+__global__ void ciz(float *fb, int maximum_x, int maximum_y){
+    int i = threadIdx.x + blockIdx.x  * blockDim.x;
+    int j = threadIdx.y + blockIdx.y  * blockDim.y;
+
+    if ((i >= maximum_x) || (j >= maximum_y)){
+        return;
+    }
+    int piksel_indeksi = j * maximum_x * 3 + i * 3;
+    fb[piksel_indeksi + 0] = float(i) / maximum_x;
+    fb[piksel_indeksi + 1] = float(j) / maximum_y;
+    fb[piksel_indeksi + 2] = 0.4f;
 }
 
-int main() {
-    int nx = 1200;
-    int ny = 600;
-    int tx = 8;
-    int ty = 8;
+int main(){
+    int genislik = 1200;
+    int uzunluk = 600;
+    int blok_genisligi = 8;
+    int blok_uzunlugu = 8;
 
-    std::cerr << "Rendering a " << nx << "x" << ny << " image ";
-    std::cerr << "in " << tx << "x" << ty << " blocks.\n";
+    std::cerr << "Resim boyutumuz " << genislik << "x"
+        << uzunluk << std::endl;
 
-    int num_pixels = nx*ny;
-    size_t fb_size = 3*num_pixels*sizeof(float);
+    std::cerr << blok_genisligi << "x" << blok_uzunlugu << " bloklar halinde"
+        << std::endl;
 
-    // allocate FB
+    int toplam_piksel_sayisi = genislik * uzunluk;
+    size_t cerceveBoyutu = 3 * toplam_piksel_sayisi * sizeof(float);
+
     float *fb;
-    checkCudaErrors(cudaMallocManaged((void **)&fb, fb_size));
+    CUDA_HATA_KONTROL(
+            cudaMallocManaged(
+                (void **)&fb, cerceveBoyutu
+                )
+            );
 
-    clock_t start, stop;
-    start = clock();
-    // Render our buffer
-    dim3 blocks(nx/tx+1,ny/ty+1);
-    dim3 threads(tx,ty);
-    render<<<blocks, threads>>>(fb, nx, ny);
-    cudaError_t cuderr = cudaGetLastError();
-    checkCudaErrors(cuderr);
-    checkCudaErrors(cudaDeviceSynchronize());
-    stop = clock();
-    double timer_seconds = ((double)(stop - start)) / CLOCKS_PER_SEC;
-    std::cerr << "took " << timer_seconds << " seconds.\n";
+    clock_t baslar, biter;
+    baslar = clock();
 
-    // Output FB as Image
-    std::cout << "P3\n" << nx << " " << ny << "\n255\n";
-    for (int j = ny-1; j >= 0; j--) {
-        for (int i = 0; i < nx; i++) {
-            size_t pixel_index = j*3*nx + i*3;
-            float r = fb[pixel_index + 0];
-            float g = fb[pixel_index + 1];
-            float b = fb[pixel_index + 2];
-            int ir = int(255.99*r);
-            int ig = int(255.99*g);
-            int ib = int(255.99*b);
-            std::cout << ir << " " << ig << " " << ib << "\n";
+    dim3 bloklar(genislik / blok_genisligi + 1,
+            uzunluk / blok_uzunlugu + 1);
+    dim3 threadler(blok_genisligi, blok_uzunlugu); 
+    ciz<<<bloklar, threadler>>>(fb, genislik, uzunluk);
+    CUDA_HATA_KONTROL(cudaGetLastError());
+    CUDA_HATA_KONTROL(cudaDeviceSynchronize());
+    biter = clock();
+    double saniyeler = ((double)(biter - baslar)) / CLOCKS_PER_SEC;
+    std::cerr << "Islem " << saniyeler << " saniye surdu" 
+        << std::endl;
+
+    std::cout << "P3" << std::endl;
+    std::cout << genislik << " " << uzunluk << std::endl;
+    std::cout << "255" << std::endl;
+
+    for (int j = uzunluk - 1; j >= 0; j--){
+        for (int i = 0; i < genislik; i++){
+            size_t piksel_indeksi = j*3*genislik + i * 3;
+            float r = fb[piksel_indeksi + 0];
+            float g = fb[piksel_indeksi + 1];
+            float b = fb[piksel_indeksi + 2];
+            int ir = int(255.99 * r);
+            int ig = int(255.99 * g);
+            int ib = int(255.99 * b);
+            std::cout << ir << " " << ig << " "
+                << ib << std::endl;
         }
     }
-
-    checkCudaErrors(cudaFree(fb));
+    CUDA_HATA_KONTROL(cudaFree(fb));
 }
