@@ -9,7 +9,7 @@ include_directories(
     "./include/"
 )
 add_executable(main_cuda.out
-    "src/main.cu"
+    "src/oneweekend/main.cu"
     )
 
 add_executable(main_c.out
@@ -18,11 +18,11 @@ add_executable(main_c.out
 
 
 
-set (CMAKE_CXX_FLAGS "-lstdc++ -ldl -ggdb -Wall -Wextra -pedantic -Wextra-tokens --std=c++17")
+set (CMAKE_CXX_FLAGS "-lstdc++ -ldl -ggdb -Wall -Wextra -pedantic -Wextra-tokens --std=c++11")
 
 
 
-set(CMAKE_CUDA_FLAGS "-ccbin clang -g -gencode arch=compute_50,code=sm_50")
+set(CMAKE_CUDA_FLAGS "-ccbin clang -g -gencode arch=compute_50,code=sm_50 --std=c++11")
 
 #target_compile_features(main PUBLIC cxx_std_11)
 
