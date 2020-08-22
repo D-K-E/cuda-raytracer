@@ -21,7 +21,19 @@ void cuda_control(cudaError_t res, const char *const fn,
 
 #define CUDA_CONTROL(v) cuda_control((v), #v, __FILE__, __LINE__)
 
+__device__ bool hit_sphere(const Point3& center, float radius, const Ray&r){
+    Vec3 oc = r.origin() - center;
+    float a = dot(r.direction(), r.direction());
+    float b = 2.0f * dot(oc, r.direction());
+    float c = dot(oc, oc) - radius*radius;
+    float discriminant = b*b - 4.0f*a*c;
+    return (discriminant > 0.0f);
+}
+
 __device__ Color ray_color(const Ray & r){
+    if (hit_sphere(Vec3(0.0f, 0.0f, -1.0f), 0.5f, r)){
+        return Vec3(1.0f, 0.0f, 0.5f);
+    }
     Vec3 udir = to_unit(r.direction());
     float t = 0.5f * (udir.y() + 1.0f);
     return (1.0f-t)*Vec3(1.0f)+ t*Vec3(0.5f, 0.7f, 1.0f);
@@ -78,7 +90,7 @@ int main(){
                                 Vec3(-2.0f, -1.0f, -1.0f),
                                 Vec3(4.0f, 0.0f, 0.0f),
                                 Vec3(0.0f, 2.0f, 0.0f),
-                                Vec3(0.0f, 0.0f, 0.0f));
+                                Vec3(0.0f));
     CUDA_CONTROL(cudaGetLastError());
     CUDA_CONTROL(cudaDeviceSynchronize());
     biter = clock();
