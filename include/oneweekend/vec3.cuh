@@ -147,6 +147,7 @@ __host__ __device__ inline Vec3 &Vec3::operator/=(float v) {
 }
 __host__ __device__ inline Vec3 to_unit(Vec3 v) { return v / v.length(); }
 
+#define RND (curand_uniform(&local_rand_state))
 __device__ Vec3 random_double(curandState* local_rand_state){
     return Vec3(
             curand_uniform(local_rand_state),
@@ -159,6 +160,21 @@ __device__ Vec3 random_in_unit_sphere(curandState *local_rand_state) {
 
     while( p.squared_length() >= 1.0f){
         p = 2.0f*random_double(local_rand_state) - Vec3(1.0f);
+    }
+    return p;
+}
+__device__ Vec3 random_in_unit_disk(curandState* lo) {
+    Vec3 p = 2.0*Vec3(
+            curand_uniform(local_rand_state),
+            curand_uniform(local_rand_state),
+            0) - Vec3(1,1,0);
+
+    while (dot(p,p) >= 1.0){
+        p = 2.0*Vec3(
+                curand_uniform(local_rand_state),
+                curand_uniform(local_rand_state),
+                0) - Vec3(1,1,0);
+
     }
     return p;
 }

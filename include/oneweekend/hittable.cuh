@@ -3,10 +3,13 @@
 
 #include <oneweekend/ray.cuh>
 
+class Material;
+
 struct HitRecord {
   float t;
   Point3 p;
   Vec3 normal;
+  Material *mat_ptr;
 };
 
 class Hittable {

@@ -20,6 +20,7 @@ public:
         rec.t = temp;
         rec.p = r.at(rec.t);
         rec.normal = (rec.p - center) / radius;
+        rec.mat_ptr = mat_ptr;
         return true;
       }
       temp = (-b + sqrt(discriminant)) / a;
@@ -27,6 +28,7 @@ public:
         rec.t = temp;
         rec.p = r.at(rec.t);
         rec.normal = (rec.p - center) / radius;
+        rec.mat_ptr = mat_ptr;
         return true;
       }
     }
@@ -36,6 +38,7 @@ public:
 public:
   Vec3 center;
   float radius;
+  Material * mat_ptr;
 };
 
 #endif

@@ -19,12 +19,19 @@ __device__ Color ray_color(
         HitRecord rec;
         bool anyHit = world[0]->hit(current_ray, 0.001f, FLT_MAX, rec);
         if (anyHit){
-            Vec3 target = rec.p + rec.normal + random_in_unit_sphere(local_rand_state);
-            current_attenuation *= 0.5f;
-            current_ray = Ray(rec.p, target - rec.p);
-            bounceNb--;
+            Ray scattered;
+            Vec3 attenuation;
+            bool isScattered = rec.mat_ptr->scatter(current_ray, 
+                    attenuation, scattered, local_rand_state);
+            if (isScattered){
+                bounceNb--;
+                current_attenuation *= attenuation;
+                current_ray = scattered;
+            }else{
+                return Vec3(0.0f); // background color
+            }
         } else {
-            Vec3 udir = to_unit(r.direction());
+            Vec3 udir = to_unit(current_ray.direction());
             float t = 0.5f * (udir.y() + 1.0f);
             Vec3 out = (1.0f-t)*Vec3(1.0f)+ t*Vec3(0.5f, 0.7f, 1.0f);
             return current_attenuation * out;
@@ -34,7 +41,10 @@ __device__ Color ray_color(
 
 }
 
-__global__ void render_init(int mx, int my, curandState *randState){
+__global__ void render_init(curandState *randState){
+    if (threadIdx.x == 0 && threadIdx.y == 0){
+        curand_int(1923, 0,0, randState);
+    }
     int i = threadIdx.x + blockIdx.x  * blockDim.x;
     int j = threadIdx.y + blockIdx.y  * blockDim.y;
 
@@ -75,19 +85,56 @@ __global__ void render(
     fb[pixel_index] = rcolor;
 }
 
+
 __global__ void make_world(Hittables** world, Hittable** ss, int size,
-        Camera** cam){
+        Camera** cam, int nx, int ny, curandState * randState){
     if (threadIdx.x == 0 && blockIdx.x == 0){
         // declare objects
-        ss[0] = new Sphere(Vec3(0,0,-1), 0.5);
-        ss[1] = new Sphere(Vec3(0,-100.5,-1), 100);
-        // thrust::device_ptr<Hittable*> hs = thrust::device_malloc<Hittable*>(2);
-        world[0] = new Hittables( ss, size);
-        cam[0] = new Camera();
+        curandState local_rand_state = *rand_state;
+        ss[0] = new Sphere(vec3(0,-1000.0,-1), 1000,
+                new Lambertian(vec3(0.5, 0.5, 0.5)));
+        int i = 1;
+        for(int a = -11; a < 11; a++) {
+            for(int b = -11; b < 11; b++) {
+                float choose_mat = RND;
+                Vec3 center(a+RND,0.2,b+RND);
+                if(choose_mat < 0.8f) {
+                    ss[i++] = new Sphere(center, 0.2,
+                            new lambertian(vec3(RND*RND, RND*RND, RND*RND)));
+                }
+                else if(choose_mat < 0.95f) {
+                    ss[i++] = new Sphere(center, 0.2,
+                            new Metal(vec3(0.5f*(1.0f+RND), 0.5f*(1.0f+RND), 0.5f*(1.0f+RND)), 0.5f*RND));
+                }
+                else {
+                    ss[i++] = new Sphere(center, 0.2, new Dielectric(1.5));
+                }
+            }
+        }
+        ss[i++] = new Sphere(Vec3(0, 1,0),  1.0, new Dielectric(1.5));
+        ss[i++] = new Sphere(Vec3(-4, 1, 0), 1.0, new Lambertian(vec3(0.4, 0.2, 0.1)));
+        ss[i++] = new Sphere(Vec3(4, 1, 0),  1.0, new Metal(vec3(0.7, 0.6, 0.5), 0.0));
+        rand_state[0] = local_rand_state;
+        world[0]  = new Hittables(d_list, 22*22+1+3);
 
+        Vec3 lookfrom(13,2,3);
+        Vec3 lookat(0,0,0);
+        float dist_to_focus = 10.0; (lookfrom-lookat).length();
+        float aperture = 0.1;
+        cam[0]   = new camera(lookfrom,
+                lookat,
+                Vec3(0,1,0),
+                30.0,
+                float(nx)/float(ny),
+                aperture,
+                dist_to_focus);
     }
 }
-__global__ void free_world(Hittables** world,Hittable **ss, Camera**cam){
+__global__ void free_world(Hittables** world,Hittable **ss, Camera**cam, int size=22*22+1+3){
+    for(int i=0; i < size; i++) {
+        delete ((sphere *)d_list[i])->mat_ptr;
+        delete ss[i];
+    }
     delete ss[0];
     delete ss[1];
     delete world[0];
