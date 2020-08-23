@@ -8,18 +8,30 @@
 #include <oneweekend/external.hpp>
 
 
-__device__ Color ray_color(const Ray & r, Hittables** world){
-    HitRecord rec;
-    bool anyHit = world[0]->hit(r, 0.0f, FLT_MAX, rec);
-    if (anyHit){
-        return 0.5f * Vec3(rec.normal.x() + 1.0f, 
-                rec.normal.y()+1.0f,
-                rec.normal.z() + 1.0f);
-    } else {
-        Vec3 udir = to_unit(r.direction());
-        float t = 0.5f * (udir.y() + 1.0f);
-        return (1.0f-t)*Vec3(1.0f)+ t*Vec3(0.5f, 0.7f, 1.0f);
+__device__ Color ray_color(
+        const Ray & r,
+        Hittables** world, 
+        curandState *local_rand_state,
+        int bounceNb){
+    Ray current_ray = r;
+    float current_attenuation = 1.0f;
+    while (bounceNb > 0){
+        HitRecord rec;
+        bool anyHit = world[0]->hit(current_ray, 0.001f, FLT_MAX, rec);
+        if (anyHit){
+            Vec3 target = rec.p + rec.normal + random_in_unit_sphere(local_rand_state);
+            current_attenuation *= 0.5f;
+            current_ray = Ray(rec.p, target - rec.p);
+            bounceNb--;
+        } else {
+            Vec3 udir = to_unit(r.direction());
+            float t = 0.5f * (udir.y() + 1.0f);
+            Vec3 out = (1.0f-t)*Vec3(1.0f)+ t*Vec3(0.5f, 0.7f, 1.0f);
+            return current_attenuation * out;
+        }
     }
+    return Vec3(0.0f); // background color
+
 }
 
 __global__ void render_init(int mx, int my, curandState *randState){
@@ -35,7 +47,7 @@ __global__ void render_init(int mx, int my, curandState *randState){
 }
 
 __global__ void render(
-        Vec3 *fb, int maximum_x, int maximum_y, int sample_nb,
+        Vec3 *fb, int maximum_x, int maximum_y, int sample_nb, int bounceNb,
         Camera** cam,
         Hittables** world,
         curandState *randState){
@@ -52,9 +64,15 @@ __global__ void render(
         float u = float(i + curand_uniform(&localS)) / float(maximum_x);
         float v = float(j+ curand_uniform(&localS)) / float(maximum_y);
         Ray r = cam[0]->get_ray(u,v);
-        rcolor += ray_color(r, world);
+        rcolor += ray_color(r, world, randState, bounceNb);
     }
-    fb[pixel_index] = rcolor / float(sample_nb);
+    // fix the bounce depth
+    randState[pixel_index] = localS;
+    rcolor /= float(sample_nb);
+    rcolor.e[0] = sqrt(rcolor.x());
+    rcolor.e[1] = sqrt(rcolor.y());
+    rcolor.e[2] = sqrt(rcolor.z());
+    fb[pixel_index] = rcolor;
 }
 
 __global__ void make_world(Hittables** world, Hittable** ss, int size,
@@ -81,7 +99,8 @@ int main(){
     int HEIGHT = 600;
     int BLOCK_WIDTH = 8;
     int BLOCK_HEIGHT = 8;
-    int SAMPLE_NB = 100;
+    int SAMPLE_NB = 120;
+    int BOUNCE_NB = 50;
 
     std::cerr << "Resim boyutumuz " << WIDTH << "x"
         << HEIGHT << std::endl;
@@ -140,6 +159,7 @@ int main(){
             WIDTH, 
             HEIGHT,
             SAMPLE_NB,
+            BOUNCE_NB,
             thrust::raw_pointer_cast(cam),
             thrust::raw_pointer_cast(world),
             thrust::raw_pointer_cast(randState)
