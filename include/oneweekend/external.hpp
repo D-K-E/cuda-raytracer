@@ -2,6 +2,7 @@
 #define EXTERNAL_HPP
 
 #include <cuda_runtime.h>
+#include <curand_kernel.h>
 #include <float.h>
 #include <iostream>
 #include <thrust/device_free.h>
