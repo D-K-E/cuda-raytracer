@@ -19,6 +19,8 @@ add_executable(
 )
 
 find_package(CUDA REQUIRED)
+#find_package(Thrust REQUIRED)
+#thrust_create_target(Thrust)
 
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -35,6 +37,9 @@ set_target_properties( main_cuda.out
                      )
 set_target_properties(main_cuda.out
     PROPERTIES LINKER_LANGUAGE CUDA)
+target_link_libraries(
+    main_cuda.out
+)
 
 install(TARGETS main_cuda.out DESTINATION "${PROJECT_SOURCE_DIR}/bin")
 install(TARGETS main_c.out DESTINATION "${PROJECT_SOURCE_DIR}/bin")

@@ -1,10 +1,8 @@
 // vec3.hpp for cuda
-#ifndef VEC3_HPP
-#define VEC3_HPP
+#ifndef VEC3_CUH
+#define VEC3_CUH
 
-#include <iostream>
-#include <math.h>
-#include <stdlib.h>
+#include <oneweekend/external.hpp>
 
 class Vec3 {
 public:

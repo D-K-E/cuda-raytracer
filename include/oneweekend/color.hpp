@@ -1,8 +1,8 @@
 #ifndef COLOR_HPP
 #define COLOR_HPP
 
-#include <iostream>
-#include <oneweekend/vec3.hpp>
+#include <oneweekend/vec3.cuh>
+#include <oneweekend/external.hpp>
 
 void write_color(std::ostream &out, Color pixel_color) {
   // Write the translated [0,255] value of each color component.

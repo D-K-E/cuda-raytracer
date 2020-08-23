@@ -1,6 +1,6 @@
-#ifndef RAY_HPP
-#define RAY_HPP
-#include <oneweekend/vec3.hpp>
+#ifndef RAY_CUH
+#define RAY_CUH
+#include <oneweekend/vec3.cuh>
 
 class Ray {
 public:

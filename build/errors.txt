@@ -1,0 +1,5 @@
+[ 33%] Built target main_c.out
+[ 50%] Building CUDA object CMakeFiles/main_cuda.out.dir/src/oneweekend/main.cu.o
+CMakeFiles/main_cuda.out.dir/build.make:81 : la recette pour la cible « CMakeFiles/main_cuda.out.dir/src/oneweekend/main.cu.o » a échouée
+CMakeFiles/Makefile2:123 : la recette pour la cible « CMakeFiles/main_cuda.out.dir/all » a échouée
+Makefile:148 : la recette pour la cible « all » a échouée
