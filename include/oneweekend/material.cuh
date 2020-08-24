@@ -6,7 +6,7 @@
 
 struct HitRecord;
 
-__device__ float fresnelCT(float costheta, float ridx) const {
+__device__ float fresnelCT(float costheta, float ridx) {
     // cook torrence fresnel equation
     float etao = 1 + sqrt(ridx);
     float etau = 1 - sqrt(ridx);
@@ -61,12 +61,12 @@ class Lambertian : public Material {
         Vec3 albedo;
 };
 
-class metal : public material {
+class Metal : public Material {
     public:
-        __device__ metal(const Vec3& a, float f) : albedo(a) { if (f < 1) fuzz = f; else fuzz = 1; }
-        __device__ virtual bool scatter(const Ray& r_in, const hit_record&
+        __device__ Metal(const Vec3& a, float f) : albedo(a) { if (f < 1) fuzz = f; else fuzz = 1; }
+        __device__ virtual bool scatter(const Ray& r_in, const HitRecord&
                 rec, Vec3& attenuation, Ray& scattered, curandState *local_rand_state) const  {
-            Vec3 reflected = reflect(unit_vector(r_in.direction()), rec.normal);
+            Vec3 reflected = reflect(to_unit(r_in.direction()), rec.normal);
             scattered = Ray(rec.p, reflected + fuzz*random_in_unit_sphere(local_rand_state));
             attenuation = albedo;
             return (dot(scattered.direction(), rec.normal) > 0.0f);
@@ -75,14 +75,14 @@ class metal : public material {
         float fuzz;
 };
 
-class dielectric : public material {
+class Dielectric : public Material {
     public:
-        __device__ dielectric(float ri) : ref_idx(ri) {}
-        __device__ virtual bool scatter(const Ray& r_in,
-                const hit_record& rec,
+        __device__ Dielectric(float ri) : ref_idx(ri) {}
+        __device__ bool scatter(const Ray& r_in,
+                const HitRecord& rec,
                 Vec3& attenuation,
                 Ray& scattered,
-                curandState *local_rand_state) const  {
+                curandState *local_rand_state) const override  {
             Vec3 outward_normal;
             Vec3 reflected = reflect(r_in.direction(), rec.normal);
             float ni_over_nt;
@@ -102,7 +102,7 @@ class dielectric : public material {
                 cosine = -dot(r_in.direction(), rec.normal) / r_in.direction().length();
             }
             if (refract(r_in.direction(), outward_normal, ni_over_nt, refracted))
-                reflect_prob = schlick(cosine, ref_idx);
+                reflect_prob = fresnelCT(cosine, ref_idx);
             else
                 reflect_prob = 1.0f;
             if (curand_uniform(local_rand_state) < reflect_prob)
@@ -111,7 +111,6 @@ class dielectric : public material {
                 scattered = Ray(rec.p, refracted);
             return true;
         }
-
         float ref_idx;
 };
 

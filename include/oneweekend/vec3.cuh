@@ -165,14 +165,14 @@ __device__ Vec3 random_in_unit_sphere(curandState *local_rand_state) {
 }
 __device__ Vec3 random_in_unit_disk(curandState* lo) {
     Vec3 p = 2.0*Vec3(
-            curand_uniform(local_rand_state),
-            curand_uniform(local_rand_state),
+            curand_uniform(lo),
+            curand_uniform(lo),
             0) - Vec3(1,1,0);
 
     while (dot(p,p) >= 1.0){
         p = 2.0*Vec3(
-                curand_uniform(local_rand_state),
-                curand_uniform(local_rand_state),
+                curand_uniform(lo),
+                curand_uniform(lo),
                 0) - Vec3(1,1,0);
 
     }

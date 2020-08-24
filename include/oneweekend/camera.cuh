@@ -13,15 +13,15 @@ class Camera {
             float half_height = tan(theta/2);
             float half_width = aspect * half_height;
             origin = orig;
-            w = unit_vector(orig - target);
+            w = to_unit(orig - target);
             u = to_unit(cross(vup, w));
             v = cross(w, u);
             lower_left_corner = origin  - half_width*focus_dist*u -half_height*focus_dist*v - focus_dist*w;
             horizontal = 2*half_width*focus_dist*u;
             vertical = 2*half_height*focus_dist*v;
         }
-        __device__ Ray get_ray(float s, float t) const { 
-            Vec3 rd = lens_radius*random_in_unit_disk();
+        __device__ Ray get_ray(float s, float t, curandState* lo) const { 
+            Vec3 rd = lens_radius*random_in_unit_disk(lo);
             Vec3 offset = u * rd.x() + v * rd.y();
             return Ray(origin + offset, lower_left_corner + s*horizontal + t*vertical - origin - offset); 
         }
