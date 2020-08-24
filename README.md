@@ -21,4 +21,9 @@ the digestion of newly coded material as per the project of Roger Allen.
 The overall project structure is also arranged to make it easier to
 integrate with other projects.
 
+Renders the screenshot below at 800 x 600 in 32.3065 seconds with 50 samples
+per pixel and 50 bounces per ray.
+
+<img src="final.png" alt="final screenshot"/>
+
 Cheers

@@ -167,11 +167,11 @@ __global__ void free_world(Hittables** world,Hittable **ss, Camera**cam){
 }
 
 int main(){
-    int WIDTH = 320;
-    int HEIGHT = 180;
+    int WIDTH = 800;
+    int HEIGHT = 600;
     int BLOCK_WIDTH = 8;
     int BLOCK_HEIGHT = 8;
-    int SAMPLE_NB = 10;
+    int SAMPLE_NB = 50;
     int BOUNCE_NB = 50;
 
     std::cerr << "Resim boyutumuz " << WIDTH << "x"
