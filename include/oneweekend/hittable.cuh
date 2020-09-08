@@ -14,7 +14,11 @@ struct HitRecord {
 
 class Hittable {
 public:
-  __device__ virtual bool hit(const Ray &r, float d_min, float d_max,
+  Material *mat_ptr;
+
+public:
+  __device__ virtual bool hit(const Ray &r, float d_min,
+                              float d_max,
                               HitRecord &rec) const = 0;
 };
 
