@@ -1,12 +1,15 @@
-#include <oneweekend/camera.cuh>
-#include <oneweekend/color.hpp>
-#include <oneweekend/debug.hpp>
-#include <oneweekend/external.hpp>
-#include <oneweekend/hittables.cuh>
-#include <oneweekend/material.cuh>
-#include <oneweekend/ray.cuh>
-#include <oneweekend/sphere.cuh>
-#include <oneweekend/vec3.cuh>
+// libs
+#include <nextweek/camera.cuh>
+#include <nextweek/cbuffer.hpp>
+#include <nextweek/color.hpp>
+#include <nextweek/debug.hpp>
+#include <nextweek/external.hpp>
+#include <nextweek/hittables.cuh>
+#include <nextweek/material.cuh>
+#include <nextweek/ray.cuh>
+#include <nextweek/sphere.cuh>
+#include <nextweek/texture.cuh>
+#include <nextweek/vec3.cuh>
 
 __device__ Color ray_color(const Ray &r, Hittables **world,
                            curandState *local_rand_state,
@@ -68,7 +71,7 @@ __global__ void render_init(int mx, int my,
 
 __global__ void render(Vec3 *fb, int maximum_x,
                        int maximum_y, int sample_nb,
-                       int bounceNb, Camera **cam,
+                       int bounceNb, Camera dcam,
                        Hittables **world,
                        curandState *randState) {
   int i = threadIdx.x + blockIdx.x * blockDim.x;
@@ -80,12 +83,13 @@ __global__ void render(Vec3 *fb, int maximum_x,
   int pixel_index = j * maximum_x + i;
   curandState localS = randState[pixel_index];
   Vec3 rcolor(0.0f);
+  Camera cam = dcam;
   for (int s = 0; s < sample_nb; s++) {
     float u = float(i + curand_uniform(&localS)) /
               float(maximum_x);
     float v = float(j + curand_uniform(&localS)) /
               float(maximum_y);
-    Ray r = cam[0]->get_ray(u, v, &localS);
+    Ray r = cam.get_ray(u, v, &localS);
     rcolor += ray_color(r, world, randState, bounceNb);
   }
   // fix the bounce depth
@@ -98,12 +102,16 @@ __global__ void render(Vec3 *fb, int maximum_x,
 }
 
 __global__ void make_world(Hittables **world, Hittable **ss,
-                           int size, Camera **cam, int nx,
-                           int ny, curandState *randState,
-                           int row) {
+                           int nx, int ny,
+                           curandState *randState, int row,
+                           unsigned char *imdata, int width,
+                           int height, int bytes_per_line,
+                           int bytes_per_pixel) {
   if (threadIdx.x == 0 && blockIdx.x == 0) {
     // declare objects
-    Lambertian *lamb = new Lambertian(Vec3(0.5, 0.5, 0.5));
+    CheckerTexture *check =
+        new CheckerTexture(Vec3(0.2, 0.8, 0.1));
+    Lambertian *lamb = new Lambertian(check);
     ss[0] = new Sphere(Vec3(0, -1000.0, -1), 1000, lamb);
     int i = 1;
     int halfRow = row / 2;
@@ -143,29 +151,25 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     Material *lamb2 = new Lambertian(Vec3(0.4, 0.2, 0.1));
     ss[i++] = new Sphere(Vec3(-4, 1, 0), 1.0, lamb2);
 
-    Material *met2 = new Metal(Vec3(0.7, 0.6, 0.5), 0.0);
-    ss[i++] = new Sphere(Vec3(4, 1, 0), 1.0, met2);
-    world[0] = new Hittables(ss, 22 * 22 + 1 + 3);
+    ImageTexture *imtex =
+        new ImageTexture(imdata, width, height,
+                         bytes_per_line, bytes_per_pixel);
+    Material *met2 = new Lambertian(imtex);
+    // Material *met2 = new Metal(Vec3(0.1, 0.2, 0.5), 0.3);
 
-    Vec3 lookfrom(13, 2, 3);
-    Vec3 lookat(0, 0, 0);
-    float dist_to_focus = 10.0;
-    (lookfrom - lookat).length();
-    float aperture = 0.1;
-    cam[0] = new Camera(lookfrom, lookat, Vec3(0, 1, 0),
-                        20.0, float(nx) / float(ny),
-                        aperture, dist_to_focus, 0.0, 1.0);
+    ss[i++] = new Sphere(Vec3(4, 1, 0), 1.0, met2);
+
+    world[0] = new Hittables(ss, 22 * 22 + 1 + 3);
   }
 }
-__global__ void free_world(Hittables **world, Hittable **ss,
-                           Camera **cam) {
+__global__ void free_world(Hittables **world,
+                           Hittable **ss) {
   int size = 22 * 22 + 1 + 3;
   for (int i = 0; i < size; i++) {
     delete ((Hittable *)ss[i])->mat_ptr;
     delete ss[i];
   }
   delete world[0];
-  delete cam[0];
 }
 
 int main() {
@@ -218,16 +222,29 @@ int main() {
       thrust::device_malloc<Hittable *>(nb_hittable);
   CUDA_CONTROL(cudaGetLastError());
 
-  // declare camera
-  thrust::device_ptr<Camera *> cam =
-      thrust::device_malloc<Camera *>(1);
+  // declara imdata
+  const char *impath = "media/earthmap.jpg";
+  ImageTexture imd(impath);
+  // thrust::device_ptr<unsigned char> imda =
+  //    thrust::device_malloc<unsigned char>(imd.size);
+  unsigned char *imdata;
+  CUDA_CONTROL(cudaMalloc(&imdata, sizeof(unsigned char) *
+                                       imd.height *
+                                       imd.bytes_per_line));
+  CUDA_CONTROL(
+      cudaMemcpy((void *)imdata, (const void *)imd.data,
+                 sizeof(unsigned char) * imd.height *
+                     imd.bytes_per_line,
+                 cudaMemcpyHostToDevice));
+
   CUDA_CONTROL(cudaGetLastError());
 
   make_world<<<1, 1>>>(
       thrust::raw_pointer_cast(world),
-      thrust::raw_pointer_cast(hs), 2,
-      thrust::raw_pointer_cast(cam), WIDTH, HEIGHT,
-      thrust::raw_pointer_cast(randState2), row);
+      thrust::raw_pointer_cast(hs), WIDTH, HEIGHT,
+      thrust::raw_pointer_cast(randState2), row, imdata,
+      imd.width, imd.height, imd.bytes_per_line,
+      imd.bytes_per_pixel);
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
 
@@ -243,9 +260,22 @@ int main() {
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
 
+  // declare camera
+  Vec3 lookfrom(13, 2, 3);
+  Vec3 lookat(0, 0, 0);
+  Vec3 wup(0, 1, 0);
+  float vfov = 20.0f;
+  float aspect_r = float(WIDTH) / float(HEIGHT);
+  float dist_to_focus = 10.0;
+  (lookfrom - lookat).length();
+  float aperture = 0.1;
+  float t0 = 0.0f, t1 = 1.0f;
+  Camera cam(lookfrom, lookat, wup, vfov, aspect_r,
+             aperture, dist_to_focus, t0, t1);
+
   render<<<blocks, threads>>>(
       thrust::raw_pointer_cast(fb), WIDTH, HEIGHT,
-      SAMPLE_NB, BOUNCE_NB, thrust::raw_pointer_cast(cam),
+      SAMPLE_NB, BOUNCE_NB, cam,
       thrust::raw_pointer_cast(world),
       thrust::raw_pointer_cast(randState1));
   CUDA_CONTROL(cudaGetLastError());
@@ -275,8 +305,7 @@ int main() {
   }
   CUDA_CONTROL(cudaDeviceSynchronize());
   free_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
-                       thrust::raw_pointer_cast(hs),
-                       thrust::raw_pointer_cast(cam));
+                       thrust::raw_pointer_cast(hs));
   CUDA_CONTROL(cudaGetLastError());
   thrust::device_free(fb);
   CUDA_CONTROL(cudaGetLastError());
@@ -284,11 +313,13 @@ int main() {
   CUDA_CONTROL(cudaGetLastError());
   thrust::device_free(hs);
   CUDA_CONTROL(cudaGetLastError());
-  thrust::device_free(cam);
+  // dcam.free();
+  cudaFree(imdata);
   CUDA_CONTROL(cudaGetLastError());
   thrust::device_free(randState2);
   CUDA_CONTROL(cudaGetLastError());
   thrust::device_free(randState1);
   CUDA_CONTROL(cudaGetLastError());
+
   cudaDeviceReset();
 }
