@@ -3,6 +3,7 @@
 
 #include <nextweek/external.hpp>
 //
+#include <nextweek/perlin.cuh>
 #include <nextweek/ray.cuh>
 #include <nextweek/utils.cuh>
 #include <nextweek/vec3.cuh>
@@ -65,6 +66,24 @@ public:
       return even->value(u, v, p);
     }
   }
+};
+
+class NoiseTexture : public Texture {
+public:
+  __device__ NoiseTexture() {}
+  __device__ NoiseTexture(float s, curandState *loc)
+      : scale(s), noise(Perlin(loc)) {}
+  __device__ Color value(float u, float v,
+                         const Point3 &p) const override {
+    float zscale = scale * p.z();
+    float turbulance = 10.0f * noise.turb(p);
+    Color white(1.0f);
+    return white * 0.5f * (1.0f + sin(zscale + turbulance));
+  }
+
+public:
+  float scale;
+  Perlin noise;
 };
 
 class ImageTexture : public Texture {

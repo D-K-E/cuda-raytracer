@@ -206,18 +206,31 @@ __device__ float random_float(curandState *loc, float min,
                               float max) {
   return min + (max - min) * curand_uniform(loc);
 }
+__device__ int random_int(curandState *loc) {
+  return (int)curand_uniform(loc);
+}
+__device__ int random_int(curandState *loc, int mn,
+                          int mx) {
+  return (int)random_float(loc, (float)mn, (float)mx);
+}
 
-__device__ Vec3
-random_double(curandState *local_rand_state) {
+__device__ Vec3 random_vec(curandState *local_rand_state) {
   return Vec3(curand_uniform(local_rand_state),
               curand_uniform(local_rand_state),
               curand_uniform(local_rand_state));
 }
+__device__ Vec3 random_vec(curandState *local_rand_state,
+                           float mn, float mx) {
+  return Vec3(random_float(local_rand_state, mn, mx),
+              random_float(local_rand_state, mn, mx),
+              random_float(local_rand_state, mn, mx));
+}
+
 __device__ Vec3
 random_in_unit_sphere(curandState *local_rand_state) {
   while (true) {
     Vec3 p =
-        2.0f * random_double(local_rand_state) - Vec3(1.0f);
+        2.0f * random_vec(local_rand_state) - Vec3(1.0f);
     if (p.squared_length() < 1.0f)
       return p;
   }

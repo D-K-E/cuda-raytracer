@@ -73,12 +73,22 @@ public:
 
 class Metal : public Material {
 public:
-  __device__ Metal(const Vec3 &a, float f) : albedo(a) {
+  __device__ Metal(const Color &a, float f) {
+    if (f < 1)
+      fuzz = f;
+    else
+      fuzz = 1;
+    //
+    albedo = new SolidColor(a);
+  }
+  __device__ Metal(Texture* txt, float f) : albedo(txt) {
     if (f < 1)
       fuzz = f;
     else
       fuzz = 1;
   }
+  __device__ ~Metal(){delete albedo;}
+
   __device__ bool
   scatter(const Ray &r_in, const HitRecord &rec,
           Vec3 &attenuation, Ray &scattered,
@@ -89,10 +99,10 @@ public:
                                fuzz * random_in_unit_sphere(
                                           local_rand_state),
                     r_in.time());
-    attenuation = albedo;
+    attenuation = albedo->value(rec.u, rec.v, rec.p);
     return (dot(scattered.direction(), rec.normal) > 0.0f);
   }
-  Vec3 albedo;
+  Texture* albedo;
   float fuzz;
 };
 

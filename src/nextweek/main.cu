@@ -124,19 +124,15 @@ __global__ void make_world(Hittables **world, Hittable **ss,
           Point3 center2 =
               center +
               Vec3(0, random_float(randState, 0.0, 0.5), 0);
-          Color albedo = random_double(randState);
-          albedo *= random_double(randState);
+          Color albedo = random_vec(randState);
+          albedo *= random_vec(randState);
           Material *lamb1 = new Lambertian(albedo);
           ss[i++] = new MovingSphere(center, center2, 0.0,
                                      1.0, 0.2, lamb1);
         } else if (choose_mat < 0.95f) {
+
           Material *met = new Metal(
-              Vec3(
-                  0.5f * (1.0f + curand_uniform(randState)),
-                  0.5f * (1.0f + curand_uniform(randState)),
-                  0.5f *
-                      (1.0f + curand_uniform(randState))),
-              0.5f * curand_uniform(randState));
+              Vec3(0.7f), 0.5f * curand_uniform(randState));
           ss[i++] = new Sphere(center, 0.2, met);
         } else {
           Material *diel = new Dielectric(1.5);
@@ -154,9 +150,10 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     Material *lamb2 = new Lambertian(imtex1);
     ss[i++] = new Sphere(Vec3(-4, 1, 0), 1.3, lamb2);
 
-    ImageTexture *imtex2 = new ImageTexture(
-        imdata, widths, heights, bytes_per_pixels, 0);
-    Material *met2 = new Lambertian(imtex2);
+    // ImageTexture *imtex2 = new ImageTexture(
+    //    imdata, widths, heights, bytes_per_pixels, 0);
+    NoiseTexture *ntxt = new NoiseTexture(4.3, randState);
+    Material *met2 = new Lambertian(ntxt);
     // Material *met2 = new Metal(Vec3(0.1, 0.2, 0.5), 0.3);
 
     ss[i++] = new Sphere(Vec3(4, 1, 0), 1.0, met2);
