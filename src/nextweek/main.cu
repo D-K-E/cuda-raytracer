@@ -104,9 +104,9 @@ __global__ void render(Vec3 *fb, int maximum_x,
 __global__ void make_world(Hittables **world, Hittable **ss,
                            int nx, int ny,
                            curandState *randState, int row,
-                           unsigned char *imdata, int width,
-                           int height, int bytes_per_line,
-                           int bytes_per_pixel) {
+                           unsigned char *imdata,
+                           int *widths, int *heights,
+                           int *bytes_per_pixels) {
   if (threadIdx.x == 0 && blockIdx.x == 0) {
     // declare objects
     CheckerTexture *check =
@@ -148,13 +148,15 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     Material *diel = new Dielectric(1.5);
     ss[i++] = new Sphere(Vec3(0, 1, 0), 1.0, diel);
 
-    Material *lamb2 = new Lambertian(Vec3(0.4, 0.2, 0.1));
-    ss[i++] = new Sphere(Vec3(-4, 1, 0), 1.0, lamb2);
+    ImageTexture *imtex1 = new ImageTexture(
+        imdata, widths, heights, bytes_per_pixels, 1);
 
-    ImageTexture *imtex =
-        new ImageTexture(imdata, width, height,
-                         bytes_per_line, bytes_per_pixel);
-    Material *met2 = new Lambertian(imtex);
+    Material *lamb2 = new Lambertian(imtex1);
+    ss[i++] = new Sphere(Vec3(-4, 1, 0), 1.3, lamb2);
+
+    ImageTexture *imtex2 = new ImageTexture(
+        imdata, widths, heights, bytes_per_pixels, 0);
+    Material *met2 = new Lambertian(imtex2);
     // Material *met2 = new Metal(Vec3(0.1, 0.2, 0.5), 0.3);
 
     ss[i++] = new Sphere(Vec3(4, 1, 0), 1.0, met2);
@@ -223,28 +225,55 @@ int main() {
   CUDA_CONTROL(cudaGetLastError());
 
   // declara imdata
-  const char *impath = "media/earthmap.png";
-  ImageTexture imd(impath);
+  std::vector<const char *> impaths = {"media/earthmap.png",
+                                       "media/lsjimg.png"};
+  std::vector<int> ws, hes, nbChannels;
+  int totalSize;
+  std::vector<unsigned char> imdata_h;
+  imread(impaths, ws, hes, nbChannels, imdata_h, totalSize);
   // thrust::device_ptr<unsigned char> imda =
   //    thrust::device_malloc<unsigned char>(imd.size);
+  unsigned char *h_ptr = imdata_h.data();
+
+  // --------------------- image ------------------------
   unsigned char *imdata;
   CUDA_CONTROL(cudaMalloc(&imdata, sizeof(unsigned char) *
-                                       imd.height *
-                                       imd.bytes_per_line));
-  CUDA_CONTROL(
-      cudaMemcpy((void *)imdata, (const void *)imd.data,
-                 sizeof(unsigned char) * imd.height *
-                     imd.bytes_per_line,
-                 cudaMemcpyHostToDevice));
+                                       totalSize));
+  CUDA_CONTROL(cudaMemcpy((void *)imdata,
+                          (const void *)h_ptr,
+                          totalSize * sizeof(unsigned char),
+                          cudaMemcpyHostToDevice));
+
+  std::size_t infosize = sizeof(int) * ws.size();
+
+  int *imwidths;
+  int *ws_ptr = ws.data();
+  CUDA_CONTROL(cudaMalloc(&imwidths, infosize));
+  CUDA_CONTROL(cudaMemcpy((void *)imwidths,
+                          (const void *)ws_ptr, infosize,
+                          cudaMemcpyHostToDevice));
+
+  int *imhs;
+  int *hs_ptr = hes.data();
+  CUDA_CONTROL(cudaMalloc(&imhs, infosize));
+  CUDA_CONTROL(cudaMemcpy((void *)imhs,
+                          (const void *)hs_ptr, infosize,
+                          cudaMemcpyHostToDevice));
+
+  int *imch; // nb channels
+  int *nb_ptr = nbChannels.data();
+  CUDA_CONTROL(cudaMalloc(&imch, infosize));
+  CUDA_CONTROL(cudaMemcpy((void *)imch,
+                          (const void *)nb_ptr, infosize,
+                          cudaMemcpyHostToDevice));
 
   CUDA_CONTROL(cudaGetLastError());
 
-  make_world<<<1, 1>>>(
-      thrust::raw_pointer_cast(world),
-      thrust::raw_pointer_cast(hs), WIDTH, HEIGHT,
-      thrust::raw_pointer_cast(randState2), row, imdata,
-      imd.width, imd.height, imd.bytes_per_line,
-      imd.bytes_per_pixel);
+  make_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
+                       thrust::raw_pointer_cast(hs), WIDTH,
+                       HEIGHT,
+                       thrust::raw_pointer_cast(randState2),
+                       row, imdata, imwidths, imhs, imch);
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
 
@@ -315,6 +344,12 @@ int main() {
   CUDA_CONTROL(cudaGetLastError());
   // dcam.free();
   cudaFree(imdata);
+  cudaFree(imch);
+  cudaFree(imhs);
+  cudaFree(imwidths);
+  // free(ws_ptr);
+  // free(nb_ptr);
+  // free(hs_ptr);
   CUDA_CONTROL(cudaGetLastError());
   thrust::device_free(randState2);
   CUDA_CONTROL(cudaGetLastError());

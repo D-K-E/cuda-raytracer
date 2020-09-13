@@ -3,6 +3,7 @@
 #define VEC3_CUH
 
 #include <nextweek/external.hpp>
+#include <nextweek/utils.cuh>
 
 class Vec3 {
 public:
@@ -69,13 +70,16 @@ public:
   }
   __host__ __device__ inline Vec3 to_unit() const;
   __host__ __device__ inline void unit_vector() const;
-  __host__ std::vector<float> to_v()const {
-      std::vector<float> v(3);
-      v[0] = x();
-      v[1] = y();
-      v[2] = z();
-      return v;
-
+  __host__ std::vector<float> to_v() const {
+    std::vector<float> v(3);
+    v[0] = x();
+    v[1] = y();
+    v[2] = z();
+    return v;
+  }
+  __host__ __device__ inline static Vec3
+  random(unsigned int seed) {
+    return Vec3(randf(seed), randf(seed), randf(seed));
   }
 };
 
@@ -193,7 +197,7 @@ __host__ __device__ inline Vec3 to_unit(Vec3 v) {
   return v / v.length();
 }
 __host__ __device__ inline Vec3 distance(Vec3 v1, Vec3 v2) {
-  return (v1-v2).length();
+  return (v1 - v2).length();
 }
 
 #define RND (curand_uniform(&local_rand_state))
@@ -211,25 +215,21 @@ random_double(curandState *local_rand_state) {
 }
 __device__ Vec3
 random_in_unit_sphere(curandState *local_rand_state) {
-  Vec3 p =
-      2.0f * random_double(local_rand_state) - Vec3(1.0f);
-
-  while (p.squared_length() >= 1.0f) {
-    p = 2.0f * random_double(local_rand_state) - Vec3(1.0f);
+  while (true) {
+    Vec3 p =
+        2.0f * random_double(local_rand_state) - Vec3(1.0f);
+    if (p.squared_length() < 1.0f)
+      return p;
   }
-  return p;
 }
 __device__ Vec3 random_in_unit_disk(curandState *lo) {
-  Vec3 p = 2.0 * Vec3(curand_uniform(lo),
-                      curand_uniform(lo), 0) -
-           Vec3(1, 1, 0);
-
-  while (dot(p, p) >= 1.0) {
-    p = 2.0 * Vec3(curand_uniform(lo), curand_uniform(lo),
-                   0) -
-        Vec3(1, 1, 0);
+  while (true) {
+    Vec3 p = 2.0 * Vec3(curand_uniform(lo),
+                        curand_uniform(lo), 0) -
+             Vec3(1, 1, 0);
+    if (p.squared_length() < 1.0f)
+      return p;
   }
-  return p;
 }
 
 using Point3 = Vec3;

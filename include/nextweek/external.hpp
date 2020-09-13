@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <cuda_runtime.h>
 #include <curand_kernel.h>
+#include <curand.h>
 #include <float.h>
 #include <iostream>
 #include <sstream>

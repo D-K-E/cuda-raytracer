@@ -67,89 +67,18 @@ public:
   }
 };
 
-struct ImageData {
-  unsigned char *data;
-  int width, height;
-  int bytes_per_line, bytes_per_pixel;
-  int nb_image;
-  int size;
-  __host__ __device__ ImageData()
-      : data(nullptr), width(0), height(0),
-        bytes_per_line(0), bytes_per_pixel(0), nb_image(0),
-        size(0) {}
-  __device__ ImageData(unsigned char *imdata, int w, int h,
-                       int bpl, int bpp, int nbim) {
-    data = imdata;
-    width = w;
-    height = h;
-    bytes_per_pixel = bpp;
-    bytes_per_line = bpl;
-    nb_image = nbim;
-    size = bytes_per_line * height * nb_image;
-  }
-  __host__ __device__ ~ImageData() { delete data; }
-  __host__ ImageData(const char *impath) {
-    nb_image = 1;
-    imread(impath);
-    size = height * bytes_per_line;
-  }
-  __host__ ImageData(std::vector<const char *> impaths) {
-    nb_image = impaths.size();
-    imread(impaths);
-    size = height * bytes_per_line * nb_image;
-  }
-  __host__ __device__ void
-  get_image_data(int index, int size,
-                 unsigned char *imdata) const {
-    int start_index = index * size;
-    for (int i = 0; i < size; i++) {
-      imdata[i] = data[i + start_index];
-    }
-  }
-
-  __host__ void set_im_vals(int w, int h, int per_pixel) {
-    width = w;
-    height = h;
-    bytes_per_pixel = per_pixel;
-    bytes_per_line = width * bytes_per_pixel;
-  }
-  __host__ void imread(const char *impath) {
-    int w, h, comp;
-    data = stbi_load(impath, &w, &h, &comp, 0);
-    if (!data) {
-      throw std::runtime_error("Image can not be loaded");
-    }
-    set_im_vals(w, h, comp);
-  }
-  __host__ void imread(std::vector<const char *> impaths) {
-    std::vector<unsigned char *> ims(impaths.size());
-    for (int i = 0; i < impaths.size(); i++) {
-      int w, h, comp;
-      ims[i] = stbi_load(impaths[i], &w, &h, &comp, 0);
-    }
-    unsigned char
-        imdata[height * bytes_per_line * nb_image];
-    for (int i = 0; i < ims.size(); i++) {
-      unsigned char *imd = ims[i];
-      for (int k = 0; k < height * bytes_per_line; k++) {
-        imdata[i * k] = imd[k];
-      }
-    }
-    data = imdata;
-  }
-};
-
 class ImageTexture : public Texture {
 public:
   unsigned char *data;
   int width, height;
   int bytes_per_line; // == bytes_per_pixel * width;
   int bytes_per_pixel;
+  int index;
 
 public:
   __host__ __device__ ImageTexture()
       : data(nullptr), width(0), height(0),
-        bytes_per_line(0), bytes_per_pixel(0) {}
+        bytes_per_line(0), bytes_per_pixel(0), index(0) {}
   __host__ ~ImageTexture() { cudaFree(data); }
   __host__ ImageTexture(const char *impath) {
     imread(impath);
@@ -169,9 +98,27 @@ public:
     bytes_per_line = width * bytes_per_pixel;
   }
   __device__ ImageTexture(unsigned char *d, int w, int h,
+                          int bpl, int bpp, int ind)
+      : data(d), width(w), height(h), bytes_per_line(bpl),
+        bytes_per_pixel(bpp), index(ind) {}
+  __device__ ImageTexture(unsigned char *d, int *ws,
+                          int *hs, int *bpps, int ind)
+      : data(d) {
+    width = ws[ind];
+    height = hs[ind];
+    bytes_per_pixel = bpps[ind];
+    bytes_per_line = bytes_per_pixel * width;
+    int start_point = 0;
+    for (int i = 0; i < ind; i++) {
+      start_point += ws[i] * hs[i] * bpps[i];
+    }
+    index = start_point;
+  }
+  __device__ ImageTexture(unsigned char *d, int w, int h,
                           int bpl, int bpp)
       : data(d), width(w), height(h), bytes_per_line(bpl),
         bytes_per_pixel(bpp) {}
+
   __device__ Color value(float u, float v,
                          const Point3 &p) const override {
     if (data == nullptr) {
@@ -185,11 +132,13 @@ public:
     yj = yj >= height ? height - 1 : yj;
 
     //
-    int pixel = yj * bytes_per_line + xi * bytes_per_pixel;
-    float r = (float)data[pixel] / 255;
-    float g = (float)data[pixel + 1] / 255;
-    float b = (float)data[pixel + 2] / 255;
-    return Color(r, g, b);
+    int pixel =
+        yj * bytes_per_line + xi * bytes_per_pixel + index;
+    Color c(0.0f);
+    for (int i = 0; i < bytes_per_pixel; i++) {
+      c.e[i] = (float)data[pixel + i] / 255;
+    }
+    return c;
   }
 };
 

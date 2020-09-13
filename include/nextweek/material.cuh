@@ -128,7 +128,8 @@ public:
       reflect_prob = fresnelCT(cosine, ref_idx);
     else
       reflect_prob = 1.0f;
-    if (randf() < reflect_prob)
+    unsigned int seed = curand(local_rand_state);
+    if (randf(seed) < reflect_prob)
       scattered = Ray(rec.p, reflected, r_in.time());
     else
       scattered = Ray(rec.p, refracted, r_in.time());
