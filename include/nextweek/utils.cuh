@@ -21,4 +21,10 @@ __host__ __device__ float clamp(float v, float mn,
   return v;
 }
 
+__host__ __device__ float randf(){
+  thrust::random::minstd_rand rng;
+  thrust::random::normal_distribution<float> dist(0.0f, 1.0f);
+  return dist(rng);
+}
+
 #endif

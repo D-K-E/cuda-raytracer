@@ -223,7 +223,7 @@ int main() {
   CUDA_CONTROL(cudaGetLastError());
 
   // declara imdata
-  const char *impath = "media/earthmap.jpg";
+  const char *impath = "media/earthmap.png";
   ImageTexture imd(impath);
   // thrust::device_ptr<unsigned char> imda =
   //    thrust::device_malloc<unsigned char>(imd.size);

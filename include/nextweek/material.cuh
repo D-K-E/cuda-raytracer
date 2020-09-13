@@ -4,6 +4,7 @@
 #include <nextweek/hittable.cuh>
 #include <nextweek/ray.cuh>
 #include <nextweek/texture.cuh>
+#include <nextweek/utils.cuh>
 
 struct HitRecord;
 
@@ -127,7 +128,7 @@ public:
       reflect_prob = fresnelCT(cosine, ref_idx);
     else
       reflect_prob = 1.0f;
-    if (curand_uniform(local_rand_state) < reflect_prob)
+    if (randf() < reflect_prob)
       scattered = Ray(rec.p, reflected, r_in.time());
     else
       scattered = Ray(rec.p, refracted, r_in.time());
