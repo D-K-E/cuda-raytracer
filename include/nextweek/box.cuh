@@ -16,7 +16,7 @@ public:
     box_min = p0;
     box_max = p1;
 
-    sides[0] = 
+    // sides[0] =
 
     sides.add(make_shared<xy_rect>(p0.x(), p1.x(), p0.y(),
                                    p1.y(), p1.z(), ptr));
