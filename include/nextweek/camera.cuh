@@ -4,8 +4,10 @@
 #include <nextweek/cbuffer.hpp>
 #include <nextweek/ray.cuh>
 
-class Camera;
 
+/** A simple Camera specification object that can be instantiated both
+  on host and on device. 
+ */
 class Camera {
 public:
   __host__ __device__ Camera(Vec3 orig, Vec3 target,

@@ -47,6 +47,12 @@ public:
   scatter(const Ray &r_in, const HitRecord &rec,
           Vec3 &attenuation, Ray &scattered,
           curandState *local_rand_state) const = 0;
+
+  __device__ virtual Color emitted(float u, float v,
+                                   const Point3 &p) const {
+    //
+    return Color(0.0f);
+  }
 };
 
 class Lambertian : public Material {
@@ -81,13 +87,13 @@ public:
     //
     albedo = new SolidColor(a);
   }
-  __device__ Metal(Texture* txt, float f) : albedo(txt) {
+  __device__ Metal(Texture *txt, float f) : albedo(txt) {
     if (f < 1)
       fuzz = f;
     else
       fuzz = 1;
   }
-  __device__ ~Metal(){delete albedo;}
+  __device__ ~Metal() { delete albedo; }
 
   __device__ bool
   scatter(const Ray &r_in, const HitRecord &rec,
@@ -102,7 +108,7 @@ public:
     attenuation = albedo->value(rec.u, rec.v, rec.p);
     return (dot(scattered.direction(), rec.normal) > 0.0f);
   }
-  Texture* albedo;
+  Texture *albedo;
   float fuzz;
 };
 
@@ -146,6 +152,28 @@ public:
     return true;
   }
   float ref_idx;
+};
+
+class DiffuseLight : public Material {
+public:
+  Texture *emit;
+
+public:
+  __device__ DiffuseLight(Texture *t) : emit(t) {}
+  __device__ DiffuseLight(Color c)
+      : emit(new SolidColor(c)) {}
+  __device__ ~DiffuseLight() { delete emit; }
+
+  __device__ bool
+  scatter(const Ray &r_in, const HitRecord &rec,
+          Vec3 &attenuation, Ray &scattered,
+          curandState *local_rand_state) const override {
+    return false;
+  }
+  __device__ Color emitted(float u, float v,
+                           const Point3 &p) const override {
+    return emit->value(u, v, p);
+  }
 };
 
 #endif

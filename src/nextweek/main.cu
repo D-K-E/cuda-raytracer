@@ -11,16 +11,23 @@
 #include <nextweek/texture.cuh>
 #include <nextweek/vec3.cuh>
 
+/**
+  @param Ray r is the incoming ray.
+  @param Hittables** world pointer to list of hittables
+ */
 __device__ Color ray_color(const Ray &r, Hittables **world,
                            curandState *local_rand_state,
                            int bounceNb) {
   Ray current_ray = r;
   Vec3 current_attenuation = Vec3(1.0f);
+  Vec3 result = Vec3(0.0f);
   while (bounceNb > 0) {
     HitRecord rec;
     bool anyHit =
         world[0]->hit(current_ray, 0.001f, FLT_MAX, rec);
     if (anyHit) {
+      Color emittedColor =
+          rec.mat_ptr->emitted(rec.u, rec.v, rec.p);
       Ray scattered;
       Vec3 attenuation;
       bool isScattered = rec.mat_ptr->scatter(
@@ -28,17 +35,20 @@ __device__ Color ray_color(const Ray &r, Hittables **world,
           local_rand_state);
       if (isScattered) {
         bounceNb--;
+        result += (current_attenuation * emittedColor);
         current_attenuation *= attenuation;
         current_ray = scattered;
       } else {
-        return Vec3(0.0f); // background color
+        result += (current_attenuation * emittedColor);
+        return result;
       }
     } else {
       Vec3 udir = to_unit(current_ray.direction());
       float t = 0.5f * (udir.y() + 1.0f);
       Vec3 out = (1.0f - t) * Vec3(1.0f) +
                  t * Vec3(0.5f, 0.7f, 1.0f);
-      return current_attenuation * out;
+      result += current_attenuation * out;
+      return result;
     }
   }
   return Vec3(0.0f); // background color
@@ -169,6 +179,35 @@ __global__ void free_world(Hittables **world,
     delete ss[i];
   }
   delete world[0];
+}
+
+void freeEverything(
+    thrust::device_ptr<Vec3> &fb,
+    thrust::device_ptr<Hittables *> &world,
+    thrust::device_ptr<Hittable *> &hs,
+    unsigned char *imdata, int *imch, int *imhs,
+    int *imwidths,
+    thrust::device_ptr<curandState> randState1,
+    thrust::device_ptr<curandState> randState2) {
+  thrust::device_free(fb);
+  CUDA_CONTROL(cudaGetLastError());
+  thrust::device_free(world);
+  CUDA_CONTROL(cudaGetLastError());
+  thrust::device_free(hs);
+  CUDA_CONTROL(cudaGetLastError());
+  // dcam.free();
+  cudaFree(imdata);
+  cudaFree(imch);
+  cudaFree(imhs);
+  cudaFree(imwidths);
+  // free(ws_ptr);
+  // free(nb_ptr);
+  // free(hs_ptr);
+  CUDA_CONTROL(cudaGetLastError());
+  thrust::device_free(randState2);
+  CUDA_CONTROL(cudaGetLastError());
+  thrust::device_free(randState1);
+  CUDA_CONTROL(cudaGetLastError());
 }
 
 int main() {
@@ -333,24 +372,8 @@ int main() {
   free_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
                        thrust::raw_pointer_cast(hs));
   CUDA_CONTROL(cudaGetLastError());
-  thrust::device_free(fb);
-  CUDA_CONTROL(cudaGetLastError());
-  thrust::device_free(world);
-  CUDA_CONTROL(cudaGetLastError());
-  thrust::device_free(hs);
-  CUDA_CONTROL(cudaGetLastError());
-  // dcam.free();
-  cudaFree(imdata);
-  cudaFree(imch);
-  cudaFree(imhs);
-  cudaFree(imwidths);
-  // free(ws_ptr);
-  // free(nb_ptr);
-  // free(hs_ptr);
-  CUDA_CONTROL(cudaGetLastError());
-  thrust::device_free(randState2);
-  CUDA_CONTROL(cudaGetLastError());
-  thrust::device_free(randState1);
+  freeEverything(fb, world, hs, imdata, imch, imhs,
+                 imwidths, randState1, randState2);
   CUDA_CONTROL(cudaGetLastError());
 
   cudaDeviceReset();

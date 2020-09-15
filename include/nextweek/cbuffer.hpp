@@ -5,6 +5,24 @@
 #include <nextweek/external.hpp>
 
 template <typename T>
+void upload_to_device(thrust::device_ptr<T> &d_ptr,
+                      T *h_ptr, int size) {
+  d_ptr = thrust::device_new<T>(size);
+  for (int i = 0; i < size; i++) {
+    d_ptr[i] = h_ptr[i];
+  }
+  delete h_ptr;
+}
+template <typename T>
+void download_to_host(thrust::device_ptr<T> &d_ptr,
+                      T *h_ptr, int size) {
+  h_ptr = new T(size);
+  CUDA_CONTROL(cudaMemcpy((void *)h_ptr,
+                          (const void *)d_ptr, size,
+                          cudaMemcpyDeviceToHost));
+}
+
+template <typename T>
 thrust::device_vector<T>
 to_device_vec(thrust::host_vector<T> hvec) {
   thrust::device_vector<T> dvec = hvec;

@@ -6,6 +6,19 @@
 #include <nextweek/utils.cuh>
 #include <nextweek/vec3.cuh>
 
+/**
+  @brief axis aligned bounding box
+
+  A simple acceleration structure that helps us to organize
+  the scene in what is know as an axis aligned bounding box.
+  A good description is given in <a
+  href="https://raytracing.github.io/books/RayTracingTheNextWeek.html#boundingvolumehierarchies/axis-alignedboundingboxes(aabbs)">P.
+  Shirley's text</a>.
+  The main idea is the following for objects that inside the same Aabb, when a
+  hit occurs, their hit distance overlaps. We check that to ensure we have a
+  hit or not. Basically instead of checking all objects inside the Aabb, by
+  simply checking maximum and minimum point we check if a hit occurred.
+ */
 class Aabb {
 public:
   __device__ Aabb() {}
