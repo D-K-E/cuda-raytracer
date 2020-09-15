@@ -7,19 +7,22 @@
 template <typename T>
 void upload_to_device(thrust::device_ptr<T> &d_ptr,
                       T *h_ptr, int size) {
-  d_ptr = thrust::device_new<T>(size);
+  d_ptr = thrust::device_malloc<T>(size);
   for (int i = 0; i < size; i++) {
     d_ptr[i] = h_ptr[i];
   }
-  delete h_ptr;
+}
+
+template <typename T>
+void upload_to_device(thrust::device_ptr<T> &d_ptr,
+                      std::vector<T> &h_ptr) {
+  d_ptr = thrust::device_ptr<T>(h_ptr.data());
 }
 template <typename T>
-void download_to_host(thrust::device_ptr<T> &d_ptr,
-                      T *h_ptr, int size) {
-  h_ptr = new T(size);
-  CUDA_CONTROL(cudaMemcpy((void *)h_ptr,
-                          (const void *)d_ptr, size,
-                          cudaMemcpyDeviceToHost));
+void download_to_host(T *d_ptr, T *h_ptr, int size) {
+  CUDA_CONTROL(
+      cudaMemcpy((void *)h_ptr, (const void *)d_ptr,
+                 sizeof(T) * size, cudaMemcpyDeviceToHost));
 }
 
 template <typename T>
