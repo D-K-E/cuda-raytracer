@@ -226,8 +226,6 @@ int main() {
     }
   }
   CUDA_CONTROL(cudaDeviceSynchronize());
-  // free_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
-  //                     thrust::raw_pointer_cast(hs));
   CUDA_CONTROL(cudaGetLastError());
   freeEverything(fb, world, hs, imdata, imch, imhs,
                  imwidths, randState1, randState2);
