@@ -12,7 +12,6 @@ void upload_to_device(thrust::device_ptr<T> &d_ptr,
     d_ptr[i] = h_ptr[i];
   }
 }
-
 template <typename T>
 void upload_to_device(thrust::device_ptr<T> &d_ptr,
                       std::vector<T> &h_ptr) {
