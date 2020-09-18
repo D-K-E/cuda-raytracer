@@ -21,17 +21,17 @@
  */
 class Aabb {
 public:
-  __device__ Aabb() {}
-  __device__ Aabb(const Point3 &a, const Point3 &b) {
+  __host__ __device__ Aabb() {}
+  __host__ __device__ Aabb(const Point3 &a, const Point3 &b) {
     _min = a;
     _max = b;
     center = (_max - _min) / 2.0;
     volume = compute_box_volume(a, b);
   }
 
-  __device__ Point3 min() const { return _min; }
-  __device__ Point3 max() const { return _max; }
-  __device__ float
+  __host__ __device__ Point3 min() const { return _min; }
+  __host__ __device__ Point3 max() const { return _max; }
+  __host__ __device__ float
   compute_box_volume(const Point3 &a,
                      const Point3 &b) const {
     // from
@@ -45,7 +45,7 @@ public:
     return (maxv.x() - minv.x()) * (maxv.y() - minv.y()) *
            (maxv.z() - minv.z());
   }
-  __device__ bool hit(const Ray &r, float tmin,
+  __host__ __device__ bool hit(const Ray &r, float tmin,
                       float tmax) const {
     for (int a = 0; a < 3; a++) {
       float t0 = dfmin(
@@ -69,7 +69,7 @@ public:
   Point3 center;
 };
 
-__device__ Aabb surrounding_box(Aabb b1, Aabb b2) {
+__host__ __device__ Aabb surrounding_box(Aabb b1, Aabb b2) {
   Point3 b1min = b1.min();
   Point3 b2min = b2.min();
   Point3 small(dfmin(b1min.x(), b2min.x()),

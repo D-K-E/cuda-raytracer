@@ -19,10 +19,10 @@ public:
   int list_size;
 
 public:
-  __device__ Hittables() { list_size = 0; }
-  __device__ Hittables(Hittable **hlist, int size)
+  __host__ __device__ Hittables() { list_size = 0; }
+  __host__ __device__ Hittables(Hittable **hlist, int size)
       : list(hlist), list_size(size) {}
-  __device__ ~Hittables() { delete list; }
+  __host__ __device__ ~Hittables() { delete list; }
 
   /**
     @brief check if there is any object that is hit by
@@ -50,7 +50,7 @@ public:
     @param rec struct that would hold all the necessary
     information for evaluating a bsdf.
    */
-  __device__ bool hit(const Ray &r, float d_min,
+  __host__ __device__ bool hit(const Ray &r, float d_min,
                       float d_max,
                       HitRecord &rec) const override {
     HitRecord temp;
@@ -76,7 +76,7 @@ public:
    @param t0 time0
    @param t1 time1
    */
-  __device__ bool
+  __host__ __device__ bool
   bounding_box(float t0, float t1,
                Aabb &output_box) const override {
     if (list_size == 0) {

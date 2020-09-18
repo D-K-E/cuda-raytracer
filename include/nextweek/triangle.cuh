@@ -12,7 +12,7 @@ class Triangle : public Hittable {
 public:
   Point3 p1, p2, p3;
   Material *mat_ptr;
-  __device__ bool hit(const Ray &r, float d_min,
+  __host__ __device__ bool hit(const Ray &r, float d_min,
                       float d_max,
                       HitRecord &rec) const override {
     // implementing moller from wikipedia
@@ -47,7 +47,7 @@ public:
     rec.set_front_face(r, outnormal);
     rec.mat_ptr = mat_ptr;
   }
-  __device__ bool
+  __host__ __device__ bool
   bounding_box(float t0, float t1,
                Aabb &output_box) const override {
     Point3 pmin = min_vec(p1, p2);

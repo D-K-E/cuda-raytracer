@@ -6,7 +6,7 @@
 #include <nextweek/material.cuh>
 #include <nextweek/utils.cuh>
 
-__device__ void get_sphere_uv(const Vec3 &p, float &u,
+__host__ __device__ void get_sphere_uv(const Vec3 &p, float &u,
                               float &v) {
   auto phi = atan2(p.z(), p.x());
   auto theta = asin(p.y());
@@ -16,11 +16,11 @@ __device__ void get_sphere_uv(const Vec3 &p, float &u,
 
 class Sphere : public Hittable {
 public:
-  __device__ Sphere() {}
-  __device__ Sphere(Point3 cen, float r, Material *mat_ptr_)
+  __host__ __device__ Sphere() {}
+  __host__ __device__ Sphere(Point3 cen, float r, Material *mat_ptr_)
       : center(cen), radius(r), mat_ptr(mat_ptr_){};
-  __device__ ~Sphere() { delete mat_ptr; }
-  __device__ bool hit(const Ray &r, float d_min,
+  __host__ __device__ ~Sphere() { delete mat_ptr; }
+  __host__ __device__ bool hit(const Ray &r, float d_min,
                       float d_max,
                       HitRecord &rec) const override {
     Vec3 oc = r.origin() - center;
@@ -52,7 +52,7 @@ public:
     }
     return false;
   }
-  __device__ bool
+  __host__ __device__ bool
   bounding_box(float t0, float t1,
                Aabb &output_box) const override {
     output_box =
@@ -73,19 +73,19 @@ public:
   Material *mat_ptr;
 
 public:
-  __device__ MovingSphere();
-  __device__ ~MovingSphere() { delete mat_ptr; };
-  __device__ MovingSphere(Point3 c1, Point3 c2, float t0,
+  __host__ __device__ MovingSphere();
+  __host__ __device__ ~MovingSphere() { delete mat_ptr; };
+  __host__ __device__ MovingSphere(Point3 c1, Point3 c2, float t0,
                           float t1, float rad,
                           Material *mat)
       : center1(c1), center2(c2), time0(t0), time1(t1),
         radius(rad), mat_ptr(mat) {}
-  __device__ Point3 center(float time) const {
+  __host__ __device__ Point3 center(float time) const {
     return center1 +
            ((time - time0) / (time1 - time0)) *
                (center2 - center1);
   }
-  __device__ bool hit(const Ray &r, float d_min,
+  __host__ __device__ bool hit(const Ray &r, float d_min,
                       float d_max,
                       HitRecord &rec) const override {
     Point3 scenter = center(r.time());
@@ -115,7 +115,7 @@ public:
     return false;
   }
 
-  __device__ bool
+  __host__ __device__ bool
   bounding_box(float t0, float t1,
                Aabb &output_box) const override {
     // NOT CORRECT

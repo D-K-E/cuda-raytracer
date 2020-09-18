@@ -10,19 +10,20 @@
 
 class Texture {
 public:
-  __device__ virtual Color value(float u, float v,
+    __host__ __device__ virtual ~Texture(){}
+  __host__ __device__ virtual Color value(float u, float v,
                                  const Point3 &p) const = 0;
 };
 
 class SolidColor : public Texture {
 public:
-  __device__ SolidColor() {}
-  __device__ SolidColor(Color c) : color_value(c) {}
+  __host__ __device__ SolidColor() {}
+  __host__ __device__ SolidColor(Color c) : color_value(c) {}
 
-  __device__ SolidColor(float red, float green, float blue)
+  __host__ __device__ SolidColor(float red, float green, float blue)
       : SolidColor(Color(red, green, blue)) {}
 
-  __device__ Color value(float u, float v,
+  __host__ __device__ Color value(float u, float v,
                          const Point3 &p) const override {
     return color_value;
   }
@@ -37,25 +38,25 @@ public:
   Texture *even;
 
 public:
-  __device__ CheckerTexture() {}
-  __device__ ~CheckerTexture() {
+  __host__ __device__ CheckerTexture() {}
+  __host__ __device__ ~CheckerTexture() {
     delete odd;
     delete even;
   }
-  __device__ CheckerTexture(Color c1, Color c2) {
+  __host__ __device__ CheckerTexture(Color c1, Color c2) {
     odd = new SolidColor(c1);
     even = new SolidColor(c2);
   }
-  __device__ CheckerTexture(Color c1) {
+  __host__ __device__ CheckerTexture(Color c1) {
     odd = new SolidColor(c1);
     even = new SolidColor(1.0 - c1);
   }
 
-  __device__ CheckerTexture(Texture *c1, Texture *c2) {
+  __host__ __device__ CheckerTexture(Texture *c1, Texture *c2) {
     odd = c1;
     even = c2;
   }
-  __device__ Color value(float u, float v,
+  __host__ __device__ Color value(float u, float v,
                          const Point3 &p) const override {
     //
     float sines = sin(10 * p.x()) * sin(10.0f * p.y()) *
@@ -70,10 +71,10 @@ public:
 
 class NoiseTexture : public Texture {
 public:
-  __device__ NoiseTexture() {}
+  __host__ __device__ NoiseTexture() {}
   __device__ NoiseTexture(float s, curandState *loc)
       : scale(s), noise(Perlin(loc)) {}
-  __device__ Color value(float u, float v,
+  __host__ __device__ Color value(float u, float v,
                          const Point3 &p) const override {
     float zscale = scale * p.z();
     float turbulance = 10.0f * noise.turb(p);
@@ -98,7 +99,7 @@ public:
   __host__ __device__ ImageTexture()
       : data(nullptr), width(0), height(0),
         bytes_per_line(0), bytes_per_pixel(0), index(0) {}
-  __host__ ~ImageTexture() { cudaFree(data); }
+  __host__ __device__ ~ImageTexture() {  }
   __host__ ImageTexture(const char *impath) {
     imread(impath);
   }
@@ -110,17 +111,17 @@ public:
     }
     set_im_vals(w, h, comp);
   }
-  __host__ void set_im_vals(int w, int h, int per_pixel) {
+  __host__ __device__ void set_im_vals(int w, int h, int per_pixel) {
     width = w;
     height = h;
     bytes_per_pixel = per_pixel;
     bytes_per_line = width * bytes_per_pixel;
   }
-  __device__ ImageTexture(unsigned char *d, int w, int h,
+  __host__ __device__ ImageTexture(unsigned char *d, int w, int h,
                           int bpl, int bpp, int ind)
       : data(d), width(w), height(h), bytes_per_line(bpl),
         bytes_per_pixel(bpp), index(ind) {}
-  __device__ ImageTexture(unsigned char *d, int *ws,
+  __host__ __device__ ImageTexture(unsigned char *d, int *ws,
                           int *hs, int *bpps, int ind)
       : data(d) {
     width = ws[ind];
@@ -133,12 +134,12 @@ public:
     }
     index = start_point;
   }
-  __device__ ImageTexture(unsigned char *d, int w, int h,
+  __host__ __device__ ImageTexture(unsigned char *d, int w, int h,
                           int bpl, int bpp)
       : data(d), width(w), height(h), bytes_per_line(bpl),
         bytes_per_pixel(bpp) {}
 
-  __device__ Color value(float u, float v,
+  __host__ __device__ Color value(float u, float v,
                          const Point3 &p) const override {
     if (data == nullptr) {
       return Color(1.0, 0.0, 0.0);

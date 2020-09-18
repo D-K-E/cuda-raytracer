@@ -6,7 +6,7 @@
 
 class Perlin {
 public:
-  __device__ Perlin() {}
+  __host__ __device__ Perlin() {}
   __device__ Perlin(curandState *loc) {
     ranvec = new Vec3[point_count];
     for (int i = 0; i < point_count; ++i) {
@@ -24,14 +24,14 @@ public:
     perm_z = pz;
   }
 
-  __device__ ~Perlin() {
+  __host__ __device__ ~Perlin() {
     delete[] ranvec;
     delete[] perm_x;
     delete[] perm_y;
     delete[] perm_z;
   }
 
-  __device__ float noise(const Point3 &p) const {
+  __host__ __device__ float noise(const Point3 &p) const {
     float u = p.x() - floor(p.x());
     float v = p.y() - floor(p.y());
     float w = p.z() - floor(p.z());
@@ -50,7 +50,7 @@ public:
     return perlin_interp(c, u, v, w);
   }
 
-  __device__ float turb(const Point3 &p,
+  __host__ __device__ float turb(const Point3 &p,
                         int depth = 7) const {
     float accum = 0.0f;
     Point3 temp_p = p;
@@ -91,7 +91,7 @@ private:
     }
   }
 
-  __device__ inline static double
+  __host__ __device__ inline static double
   perlin_interp(Vec3 c[2][2][2], float u, float v,
                 float w) {
     auto uu = u * u * (3 - 2 * u);

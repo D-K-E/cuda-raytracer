@@ -38,16 +38,6 @@ __global__ void render_init(int mx, int my,
               &randState[pixel_index]);
 }
 
-__global__ void free_world(Hittables **world,
-                           Hittable **ss) {
-  int size = 22 * 22 + 1 + 3;
-  for (int i = 0; i < size; i++) {
-    delete ((Hittable *)ss[i])->mat_ptr;
-    delete ss[i];
-  }
-  delete world[0];
-}
-
 void freeEverything(
     thrust::device_ptr<Vec3> &fb,
     thrust::device_ptr<Hittables *> &world,
