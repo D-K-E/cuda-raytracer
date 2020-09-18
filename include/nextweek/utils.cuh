@@ -40,6 +40,18 @@ __host__ __device__ float randf(unsigned int seed) {
                                                   1.0f);
   return dist(rng);
 }
+__host__ __device__ float randf(unsigned int seed, int mn, int mx) {
+  thrust::random::default_random_engine rng(seed);
+  thrust::random::normal_distribution<float> dist(mn,
+                                                  mx);
+  return dist(rng);
+}
+__host__ __device__ int randint(unsigned int seed) {
+  return static_cast<int>(randf(seed));
+}
+__host__ __device__ int randint(unsigned int seed, int mn, int mx) {
+  return static_cast<int>(randf(seed, mn,mx));
+}
 
 // imutils
 

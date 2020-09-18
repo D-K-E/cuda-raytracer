@@ -3,6 +3,7 @@
 
 #include <nextweek/external.hpp>
 #include <nextweek/vec3.cuh>
+#include <nextweek/utils.cuh>
 
 class Perlin {
 public:
@@ -84,7 +85,8 @@ private:
   __device__ static void permute(int *p, int n,
                                  curandState *loc) {
     for (int i = n - 1; i > 0; i--) {
-      int target = random_int(loc, 0, i);
+      int target = random_int(loc,0, i);
+      // int target = randint((unsigned int)i,0, i);
       int tmp = p[i];
       p[i] = p[target];
       p[target] = tmp;
