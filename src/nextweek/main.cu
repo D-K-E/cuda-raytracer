@@ -143,14 +143,6 @@ int main() {
   // --------------------- image ------------------------
   thrust::device_ptr<unsigned char> imdata;
   upload_to_device(imdata, h_ptr, imdata_h.size());
-  // CUDA_CONTROL(cudaMalloc(&imdata, sizeof(unsigned char)
-  // *
-  //                                     totalSize));
-  // CUDA_CONTROL(cudaMemcpy((void *)imdata,
-  //                        (const void *)h_ptr,
-  //                        totalSize * sizeof(unsigned
-  //                        char),
-  //                        cudaMemcpyHostToDevice));
 
   int *ws_ptr = ws.data();
 
@@ -234,8 +226,8 @@ int main() {
     }
   }
   CUDA_CONTROL(cudaDeviceSynchronize());
-  free_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
-                       thrust::raw_pointer_cast(hs));
+  // free_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
+  //                     thrust::raw_pointer_cast(hs));
   CUDA_CONTROL(cudaGetLastError());
   freeEverything(fb, world, hs, imdata, imch, imhs,
                  imwidths, randState1, randState2);
