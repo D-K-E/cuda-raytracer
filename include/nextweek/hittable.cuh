@@ -42,7 +42,7 @@ struct HitRecord {
     @param r incoming ray
     @param norm the surface normal of the hit point.
    */
-  __device__ void set_front_face(const Ray &r,
+  __host__ __device__ void set_front_face(const Ray &r,
                                  const Vec3 &norm) {
     front_face = dot(r.direction(), norm) < 0.0f;
     normal = front_face ? norm : -norm;
@@ -79,7 +79,7 @@ public:
     @param rec the record object that would hold the
     parameters required by the scattering function later on.
    */
-  __device__ virtual bool hit(const Ray &r, float d_min,
+  __host__ __device__ virtual bool hit(const Ray &r, float d_min,
                               float d_max,
                               HitRecord &rec) const = 0;
 
@@ -94,7 +94,7 @@ public:
     @param t0 time0
     @param t1 time1
    */
-  __device__ virtual bool
+  __host__ __device__ virtual bool
   bounding_box(float t0, float t1,
                Aabb &output_box) const = 0;
 };
