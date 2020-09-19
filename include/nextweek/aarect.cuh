@@ -14,11 +14,10 @@ struct AxisInfo {
   int notAligned;
 };
 
-float get_pdf_surface(Vec3 dir, Vec3 normal, float rec.dist,
+float get_pdf_surface(Vec3 dir, Vec3 normal, float dist,
                       float area) {
   //
-  float dist_squared =
-      rec.dist * rec.dist / dir.squared_length();
+  float dist_squared = dist * dist / dir.squared_length();
   float cosine = fabs(dot(dir, normal) / dir.length());
   return dist_squared / (cosine * area);
 }
@@ -35,28 +34,29 @@ public:
   Material *mat_ptr;
 
 public:
-  __device__ AaRect() {}
-  __device__ AaRect(float a_0, float a_1, float b_0,
-                    float b_1, float _k,
-                    shared_ptr<Material> mat, Vec3 anormal)
+  __host__ __device__ AaRect() {}
+  __host__ __device__ AaRect(float a_0, float a_1,
+                             float b_0, float b_1, float _k,
+                             Material *mat, Vec3 anormal)
       : a0(a_0), a1(a_1), b0(b_0), b1(b_1), k(_k),
         mat_ptr(mat), axis_normal(anormal) {
-    if (anormal.z == 1.0) {
+    if (anormal.z() == 1.0) {
       ax.aligned1 = 0;
       ax.aligned2 = 1;
       ax.notAligned = 2;
-    } else if (anormal.x == 1.0) {
+    } else if (anormal.x() == 1.0) {
       ax.aligned1 = 1;
       ax.aligned2 = 2;
       ax.notAligned = 0;
-    } else if (anormal.y == 1.0) {
+    } else if (anormal.y() == 1.0) {
       ax.aligned1 = 0;
       ax.aligned2 = 2;
       ax.notAligned = 1;
     }
   }
-  __device__ bool hit(const Ray &r, float t0, float t1,
-                      HitRecord &rec) const override {
+  __host__ __device__ bool
+  hit(const Ray &r, float t0, float t1,
+      HitRecord &rec) const override {
     /*
        point of intersection satisfies
        both P = O + D*m Point = Origin + Direction *
@@ -81,14 +81,14 @@ public:
     }
     rec.u = (a - a0) / (a1 - a0);
     rec.v = (b - b0) / (b1 - b0);
-    rec.dist = t;
+    rec.t = t;
     Vec3 outward_normal = axis_normal;
-    rec.set_face_normal(r, outward_normal);
+    rec.set_front_face(r, outward_normal);
     rec.mat_ptr = mat_ptr;
-    rec.point = r.at(t);
+    rec.p = r.at(t);
     return true;
   }
-  __device__ bool
+  __host__ __device__ bool
   bounding_box(float t0, float t1,
                Aabb &output_box) const override {
     // The bounding box must have non-zero width in each
@@ -116,10 +116,10 @@ public:
   float x0, x1, y0, y1;
 
 public:
-  __device__ XYRect() {}
-  __device__ XYRect(float _x0, float _x1, float _y0,
-                    float _y1, float _k,
-                    shared_ptr<Material> mat)
+  __host__ __device__ XYRect() {}
+  __host__ __device__ XYRect(float _x0, float _x1,
+                             float _y0, float _y1, float _k,
+                             Material *mat)
       : AaRect(_x0, _x1, _y0, _y1, _k, mat, Vec3(0, 0, 1)),
         x0(_x0), x1(_x1), y0(_y0), y1(_y1) {}
 };
@@ -128,15 +128,16 @@ public:
   float x0, x1, z0, z1;
 
 public:
-  __device__ XZRect() {}
-  __device__ XZRect(float _x0, float _x1, float _z0,
-                    float _z1, float _k, Material *mat)
+  __host__ __device__ XZRect() {}
+  __host__ __device__ XZRect(float _x0, float _x1,
+                             float _z0, float _z1, float _k,
+                             Material *mat)
       : AaRect(_x0, _x1, _z0, _z1, _k, mat, Vec3(0, 1, 0)),
         x0(_x0), x1(_x1), z0(_z0), z1(_z1) {}
   float pdf_value(const Point3 &origin,
-                  const Vec3 &dir) const override {
+                  const Vec3 &dir) const {
     HitRecord rec;
-    if (!this->hit(Ray(origin, dir), 0.001, INF, rec))
+    if (!hit(Ray(origin, dir), 0.001, FLT_MAX, rec))
       return 0;
 
     float area = (x1 - x0) * (z1 - z0);
@@ -146,13 +147,14 @@ public:
     // length(dir));
 
     // return distance_squared / (cosine * area);
-    return get_pdf_surface(dir, rec.normal, rec.dist, area);
+    return get_pdf_surface(dir, rec.normal, rec.t, area);
   }
 
-  __device__ Vec3 random(const point3 &origin,
-                         curandState *loc) const override {
-    Point3 random_point = Point3(random_vec(loc, x0, x1), k,
-                                 random_vec(loc, z0, z1));
+  __device__ Vec3 random(const Point3 &origin,
+                         curandState *loc) const {
+    Point3 random_point =
+        Point3(random_float(loc, x0, x1), k,
+               random_float(loc, z0, z1));
     return random_point - origin;
   }
 };
@@ -161,9 +163,10 @@ public:
   float y0, y1, z0, z1;
 
 public:
-  __device__ YZRect() {}
-  __device__ YZRect(float _y0, float _y1, float _z0,
-                    float _z1, float _k, Material *mat)
+  __host__ __device__ YZRect() {}
+  __host__ __device__ YZRect(float _y0, float _y1,
+                             float _z0, float _z1, float _k,
+                             Material *mat)
       : AaRect(_y0, _y1, _z0, _z1, _k, mat, Vec3(1, 0, 0)),
         y0(_y0), y1(_y1), z0(_z0), z1(_z1) {}
 };
