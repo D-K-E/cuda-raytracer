@@ -1,4 +1,5 @@
 // libs
+#include <cstddef>
 #include <nextweek/camera.cuh>
 #include <nextweek/cbuffer.hpp>
 #include <nextweek/color.hpp>
@@ -63,7 +64,7 @@ int main() {
   CUDA_CONTROL(cudaGetLastError());
 
   // declare random state
-  int SEED = 1987;
+  int SEED = time(NULL);
   thrust::device_ptr<curandState> randState1 =
       thrust::device_malloc<curandState>(frameSize);
   CUDA_CONTROL(cudaGetLastError());

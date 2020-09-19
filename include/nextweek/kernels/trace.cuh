@@ -41,12 +41,7 @@ __device__ Color ray_color(const Ray &r, Hittables **world,
         return result;
       }
     } else {
-      Vec3 udir = to_unit(current_ray.direction());
-      float t = 0.5f * (udir.y() + 1.0f);
-      Vec3 out = (1.0f - t) * Vec3(1.0f) +
-                 t * Vec3(0.5f, 0.7f, 1.0f);
-      result += current_attenuation * out;
-      return result;
+      return Color(0.0);
     }
   }
   return Vec3(0.0f); // background color

@@ -200,19 +200,20 @@ __host__ __device__ inline Vec3 distance(Vec3 v1, Vec3 v2) {
   return (v1 - v2).length();
 }
 
-__host__ __device__ Vec3 min_vec(const Vec3 &v1, const Vec3 &v2){
-    float xmin = fmin(v1.x(), v2.x());
-    float ymin = fmin(v1.y(), v2.y());
-    float zmin = fmin(v1.z(), v2.z());
-    return Vec3(xmin, ymin, zmin);
+__host__ __device__ Vec3 min_vec(const Vec3 &v1,
+                                 const Vec3 &v2) {
+  float xmin = fmin(v1.x(), v2.x());
+  float ymin = fmin(v1.y(), v2.y());
+  float zmin = fmin(v1.z(), v2.z());
+  return Vec3(xmin, ymin, zmin);
 }
-__host__ __device__ Vec3 max_vec(const Vec3 v1, const Vec3 v2){
-    float xmax = fmax(v1.x(), v2.x());
-    float ymax = fmax(v1.y(), v2.y());
-    float zmax = fmax(v1.z(), v2.z());
-    return Vec3(xmax, ymax, zmax);
+__host__ __device__ Vec3 max_vec(const Vec3 v1,
+                                 const Vec3 v2) {
+  float xmax = fmax(v1.x(), v2.x());
+  float ymax = fmax(v1.y(), v2.y());
+  float zmax = fmax(v1.z(), v2.z());
+  return Vec3(xmax, ymax, zmax);
 }
-
 
 #define RND (curand_uniform(&local_rand_state))
 
@@ -257,6 +258,16 @@ __device__ Vec3 random_in_unit_disk(curandState *lo) {
     if (p.squared_length() < 1.0f)
       return p;
   }
+}
+
+__device__ Vec3 random_in_hemisphere(curandState *lo,
+                                     Vec3 normal) {
+
+  Vec3 in_unit_sphere = random_in_unit_sphere(lo);
+  if (dot(in_unit_sphere, normal) > 0.0)
+    return in_unit_sphere;
+  else
+    return -in_unit_sphere;
 }
 
 using Point3 = Vec3;

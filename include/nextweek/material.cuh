@@ -72,9 +72,9 @@ public:
   scatter(const Ray &r_in, const HitRecord &rec,
           Color &attenuation, Ray &scattered,
           curandState *local_rand_state) const override {
-    Vec3 target = rec.p + rec.normal +
+    Vec3 target = rec.normal +
                   random_in_unit_sphere(local_rand_state);
-    scattered = Ray(rec.p, target - rec.p, r_in.time());
+    scattered = Ray(rec.p, target, r_in.time());
     attenuation = albedo->value(rec.u, rec.v, rec.p);
     return true;
   }
