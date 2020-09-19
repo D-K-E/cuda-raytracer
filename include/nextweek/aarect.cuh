@@ -96,15 +96,19 @@ public:
     // dimension a small amount.
     Point3 p1, p2;
     // choose points with axis
-    if (ax.notAligned == 2) {
+    switch (ax.notAligned) {
+    case 2:
       p1 = Point3(a0, b0, k - 0.0001);
       p2 = Point3(a1, b1, k + 0.0001);
-    } else if (ax.notAligned == 1) {
+      break;
+    case 1:
       p1 = Point3(a0, k - 0.0001, b0);
       p2 = Point3(a1, k + 0.0001, b1);
-    } else if (ax.notAligned == 0) {
+      break;
+    case 0:
       p1 = Point3(k - 0.0001, a0, b0);
       p2 = Point3(k + 0.0001, a1, b1);
+      break;
     }
     output_box = Aabb(p1, p2);
     return true;

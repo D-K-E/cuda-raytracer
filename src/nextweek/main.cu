@@ -35,18 +35,18 @@ __global__ void render_init(int mx, int my,
   }
   int pixel_index = j * mx + i;
   // same seed, different index
-  curand_init(seed, pixel_index, 0,
+  curand_init(seed + pixel_index, pixel_index, 0,
               &randState[pixel_index]);
 }
 
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
-  int WIDTH = 480;
+  int WIDTH = 800;
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
   int BLOCK_WIDTH = 10;
   int BLOCK_HEIGHT = 10;
-  int SAMPLE_NB = 50;
-  int BOUNCE_NB = 25;
+  int SAMPLE_NB = 500;
+  int BOUNCE_NB = 500;
 
   std::cerr << "Resim boyutumuz " << WIDTH << "x" << HEIGHT
             << std::endl;
@@ -82,7 +82,8 @@ int main() {
   thrust::device_ptr<Hittables *> world =
       thrust::device_malloc<Hittables *>(1);
   CUDA_CONTROL(cudaGetLastError());
-  int nb_hittable = 6;
+  int box_size = 6;
+  int nb_hittable = 6 + box_size * 2 + 1;
   thrust::device_ptr<Hittable *> hs =
       thrust::device_malloc<Hittable *>(nb_hittable);
   CUDA_CONTROL(cudaGetLastError());
@@ -165,8 +166,7 @@ int main() {
   Vec3 wup(0, 1, 0);
   float vfov = 40.0f;
   float aspect_r = float(WIDTH) / float(HEIGHT);
-  float dist_to_focus = 10.0;
-  // (lookfrom - lookat).length();
+  float dist_to_focus = (lookfrom - lookat).length();
   float aperture = 0.0;
   float t0 = 0.0f, t1 = 1.0f;
 

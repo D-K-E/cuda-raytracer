@@ -29,6 +29,15 @@ per pixel and 50 bounces per ray.
 The one in below at 640x360 in 30.4133 seconds with 20 samples and 10 bounces.
 <img src="final2.png" alt="final screenshot second version"/>
 
+
+I don't remember the settings for this one. But it includes perlin noise so.
+<img src="final3.png" alt="final screenshot third version"/>
+
+
+The one in below at 800x450 in 49.5292 seconds with 500 samples and 500
+bounces.
+<img src="final4.png" alt="final screenshot fourth version"/>
+
 ## Features
 
 - Most of what you get in Ray Tracing In One Weekend.

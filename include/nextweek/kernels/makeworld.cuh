@@ -2,6 +2,7 @@
 #pragma once
 
 #include <nextweek/aarect.cuh>
+#include <nextweek/box.cuh>
 #include <nextweek/hittable.cuh>
 #include <nextweek/hittables.cuh>
 #include <nextweek/material.cuh>
@@ -104,12 +105,38 @@ void free_world(
   CUDA_CONTROL(cudaGetLastError());
 }
 
+__device__ void make_box(Hittable **s, int &i,
+                         const Point3 &p0, const Point3 &p1,
+                         Material *mptr) {
+  // make a box with points
+  i++;
+  s[i] = new XYRect(p0.x(), p1.x(), p0.y(), p1.y(), p1.z(),
+                    mptr);
+  i++;
+  s[i] = new XYRect(p0.x(), p1.x(), p0.y(), p1.y(), p0.z(),
+                    mptr);
+
+  i++;
+  s[i] = new XZRect(p0.x(), p1.x(), p0.z(), p1.z(), p1.y(),
+                    mptr);
+  i++;
+  s[i] = new XZRect(p0.x(), p1.x(), p0.z(), p1.z(), p0.y(),
+                    mptr);
+
+  i++;
+  s[i] = new YZRect(p0.y(), p1.y(), p0.z(), p1.z(), p1.x(),
+                    mptr);
+  i++;
+  s[i] = new YZRect(p0.y(), p1.y(), p0.z(), p1.z(), p0.x(),
+                    mptr);
+}
+
 __global__ void make_empty_cornell_box(Hittables **world,
                                        Hittable **ss) {
   // declare objects
   if (threadIdx.x == 0 && blockIdx.x == 0) {
-
     Material *red = new Lambertian(Color(.65, .05, .05));
+    Material *blue = new Lambertian(Color(.05, .05, .65));
     Material *white = new Lambertian(Color(.73, .73, .73));
     Material *green = new Lambertian(Color(.12, .45, .15));
     Material *light = new DiffuseLight(Color(15, 15, 15));
@@ -124,7 +151,16 @@ __global__ void make_empty_cornell_box(Hittables **world,
     i++;
     ss[i] = new XZRect(0, 555, 0, 555, 555, white);
     i++;
-    ss[i] = new XYRect(0, 555, 0, 555, 555, white);
+    ss[i] = new XYRect(0, 555, 0, 555, 555, blue);
+    // -------------- Boxes -------------------------
+    Point3 bp1(130, 0, 65);
+    Point3 bp2(295, 165, 230);
+    make_box(ss, i, bp1, bp2, white);
+    Point3 bp3(265, 0, 295);
+    Point3 bp4(430, 330, 460);
+    make_box(ss, i, bp3, bp4, white);
+    i++;
+
     world[0] = new Hittables(ss, i);
   }
 }

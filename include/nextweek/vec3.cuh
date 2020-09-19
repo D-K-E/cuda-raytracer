@@ -245,15 +245,16 @@ __device__ Vec3
 random_in_unit_sphere(curandState *local_rand_state) {
   while (true) {
     Vec3 p =
-        2.0f * random_vec(local_rand_state) - Vec3(1.0f);
+        2.0f * random_vec(local_rand_state, -1.0f, 1.0f) -
+        Vec3(1.0f);
     if (p.squared_length() < 1.0f)
       return p;
   }
 }
 __device__ Vec3 random_in_unit_disk(curandState *lo) {
   while (true) {
-    Vec3 p = 2.0 * Vec3(curand_uniform(lo),
-                        curand_uniform(lo), 0) -
+    Vec3 p = 2.0 * Vec3(random_float(lo, -1.0f, 1.0f),
+                        random_float(lo, -1.0f, 1.0f), 0) -
              Vec3(1, 1, 0);
     if (p.squared_length() < 1.0f)
       return p;
@@ -262,7 +263,6 @@ __device__ Vec3 random_in_unit_disk(curandState *lo) {
 
 __device__ Vec3 random_in_hemisphere(curandState *lo,
                                      Vec3 normal) {
-
   Vec3 in_unit_sphere = random_in_unit_sphere(lo);
   if (dot(in_unit_sphere, normal) > 0.0)
     return in_unit_sphere;
