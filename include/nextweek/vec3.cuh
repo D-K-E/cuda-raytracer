@@ -44,7 +44,9 @@ public:
   __host__ __device__ inline float operator[](int i) const {
     return e[i];
   }
-
+  __host__ __device__ inline float &operator[](int i) {
+    return e[i];
+  }
   __host__ __device__ inline Vec3 &
   operator+=(const Vec3 &v);
   __host__ __device__ inline Vec3 &

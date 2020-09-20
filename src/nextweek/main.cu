@@ -39,14 +39,36 @@ __global__ void render_init(int mx, int my,
               &randState[pixel_index]);
 }
 
+void get_device_props() {
+  int nDevices;
+
+  cudaGetDeviceCount(&nDevices);
+  for (int i = 0; i < nDevices; i++) {
+    cudaDeviceProp prop;
+    cudaGetDeviceProperties(&prop, i);
+    std::cerr << "Device Number: " << i << std::endl;
+    std::cerr << "Device name: " << prop.name << std::endl;
+    std::cerr << "Memory Clock Rate (KHz): "
+              << prop.memoryClockRate << std::endl;
+    std::cerr << "Memory Bus Width (bits): "
+              << prop.memoryBusWidth << std::endl;
+    std::cerr << "  Peak Memory Bandwidth (GB/s): "
+              << 2.0 * prop.memoryClockRate *
+                     (prop.memoryBusWidth / 8) / 1.0e6
+              << std::endl;
+  }
+}
+
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
-  int WIDTH = 800;
+  int WIDTH = 320;
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
   int BLOCK_WIDTH = 10;
   int BLOCK_HEIGHT = 10;
-  int SAMPLE_NB = 500;
-  int BOUNCE_NB = 500;
+  int SAMPLE_NB = 100;
+  int BOUNCE_NB = 50;
+
+  get_device_props();
 
   std::cerr << "Resim boyutumuz " << WIDTH << "x" << HEIGHT
             << std::endl;

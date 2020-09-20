@@ -6,6 +6,10 @@
 
 const float PI = 3.141592653589f;
 
+__host__ __device__ float degree_to_radian(float d) {
+  return d * PI / 180.0f;
+}
+
 __host__ __device__ float dfmin(float f1, float f2) {
   return f1 < f2 ? f1 : f2;
 }
@@ -40,17 +44,18 @@ __host__ __device__ float randf(unsigned int seed) {
                                                   1.0f);
   return dist(rng);
 }
-__host__ __device__ float randf(unsigned int seed, int mn, int mx) {
+__host__ __device__ float randf(unsigned int seed, int mn,
+                                int mx) {
   thrust::random::default_random_engine rng(seed);
-  thrust::random::normal_distribution<float> dist(mn,
-                                                  mx);
+  thrust::random::normal_distribution<float> dist(mn, mx);
   return dist(rng);
 }
 __host__ __device__ int randint(unsigned int seed) {
   return static_cast<int>(randf(seed));
 }
-__host__ __device__ int randint(unsigned int seed, int mn, int mx) {
-  return static_cast<int>(randf(seed, mn,mx));
+__host__ __device__ int randint(unsigned int seed, int mn,
+                                int mx) {
+  return static_cast<int>(randf(seed, mn, mx));
 }
 
 // imutils
