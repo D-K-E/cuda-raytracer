@@ -63,8 +63,8 @@ int main() {
   float aspect_ratio = 16.0f / 9.0f;
   int WIDTH = 320;
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
-  int BLOCK_WIDTH = 10;
-  int BLOCK_HEIGHT = 10;
+  int BLOCK_WIDTH = 32;
+  int BLOCK_HEIGHT = 18;
   int SAMPLE_NB = 100;
   int BOUNCE_NB = 50;
 
