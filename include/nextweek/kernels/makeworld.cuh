@@ -153,12 +153,14 @@ __global__ void make_empty_cornell_box(Hittables **world,
     i++;
     ss[i] = new XYRect(0, 555, 0, 555, 555, blue);
     // -------------- Boxes -------------------------
+    i++;
     Point3 bp1(130, 0, 65);
     Point3 bp2(295, 165, 230);
-    make_box(ss, i, bp1, bp2, white);
+    Box b1(bp1, bp2, white, ss, i);
+    i++;
     Point3 bp3(265, 0, 295);
     Point3 bp4(430, 330, 460);
-    make_box(ss, i, bp3, bp4, white);
+    Box b2(bp3, bp4, white, ss, i);
     i++;
 
     world[0] = new Hittables(ss, i);
