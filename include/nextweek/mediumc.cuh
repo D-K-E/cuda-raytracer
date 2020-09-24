@@ -12,31 +12,25 @@
 
 class ConstantMedium : public Hittable {
 public:
-  __host__ __device__ ConstantMedium(Hittable **&b, float d,
-                                     Texture *a, int s,
-                                     int e)
+  __host__ __device__ ConstantMedium(Hittable *&b, float d,
+                                     Texture *a)
       : boundary(b), neg_inv_density(-1 / d),
-        phase_function(new Isotropic(a)), start_index(s),
-        end_index(e) {}
+        phase_function(new Isotropic(a)) {}
 
-  __device__ ConstantMedium(Hittable **&b, float d,
-                            Texture *a, curandState *s,
-                            int si, int ei)
+  __device__ ConstantMedium(Hittable *&b, float d,
+                            Texture *a, curandState *s)
       : boundary(b), neg_inv_density(-1 / d),
-        phase_function(new Isotropic(a)), rState(s),
-        start_index(si), end_index(ei) {}
+        phase_function(new Isotropic(a)), rState(s) {}
 
-  __host__ __device__ ConstantMedium(Hittable **&b, float d,
-                                     Color c, int s, int e)
+  __host__ __device__ ConstantMedium(Hittable *&b, float d,
+                                     Color c)
       : boundary(b), neg_inv_density(-1 / d),
-        phase_function(new Isotropic(c)), start_index(s),
-        end_index(e) {}
+        phase_function(new Isotropic(c)) {}
 
-  __device__ ConstantMedium(Hittable **b, float d, Color c,
-                            curandState *s, int si, int ei)
+  __device__ ConstantMedium(Hittable *b, float d, Color c,
+                            curandState *s)
       : boundary(b), neg_inv_density(-1 / d),
-        phase_function(new Isotropic(c)), rState(s),
-        start_index(si), end_index(ei) {}
+        phase_function(new Isotropic(c)), rState(s) {}
 
   __device__ bool hit(const Ray &r, float t_min,
                       float t_max,
@@ -51,10 +45,10 @@ public:
 
     HitRecord rec1, rec2;
 
-    if (!bound_hit(r, -FLT_MAX, FLT_MAX, rec1))
+    if (!boundary->hit(r, -FLT_MAX, FLT_MAX, rec1))
       return false;
 
-    if (!bound_hit(r, rec1.t + 0.0001f, FLT_MAX, rec2))
+    if (!boundary->hit(r, rec1.t + 0.0001f, FLT_MAX, rec2))
       return false;
 
     if (debugging) {
@@ -103,42 +97,14 @@ public:
   __host__ __device__ bool
   bounding_box(float t0, float t1,
                Aabb &output_box) const override {
-    Aabb temp;
-    bool isBound =
-        boundary[start_index]->bounding_box(t0, t1, temp);
-    for (int i = start_index + 1; i <= end_index; i++) {
-      Aabb temp2;
-      if (boundary[i]->bounding_box(t0, t1, temp2))
-        isBound = true;
-      temp = surrounding_box(temp, temp2);
-    }
-    output_box = temp;
-    return isBound;
-  }
-  __device__ bool bound_hit(const Ray &r, float t_min,
-                            float t_max,
-                            HitRecord &rec) const {
-    HitRecord temp;
-    bool hit_anything = false;
-    float closest_far = t_max;
-    for (int i = start_index; i <= end_index; i++) {
-      Hittable *h = boundary[i];
-      bool isHit = h->hit(r, t_min, closest_far, temp);
-      if (isHit == true) {
-        hit_anything = true;
-        closest_far = temp.t;
-        rec = temp;
-      }
-    }
-    return hit_anything;
+    return boundary->bounding_box(t0, t1, output_box);
   }
 
 public:
-  Hittable **boundary;
+  Hittable *boundary;
   Material *phase_function;
   float neg_inv_density;
   curandState *rState;
-  int start_index, end_index;
 };
 
 #endif

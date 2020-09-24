@@ -14,11 +14,11 @@ public:
   __host__ __device__ ~Box() { delete sides; }
   __host__ __device__ Box(const Point3 &p0,
                           const Point3 &p1, Material *mptr,
-                          Hittable **&ss, int &i)
+                          Hittable **&ss, int &i, State s)
       : m_ptr(mptr) {
     box_min = p0;
     box_max = p1;
-    state = SOLID;
+    state = s;
     const int sindex = i;
 
     start_index = sindex;
@@ -46,6 +46,10 @@ public:
     end_index = eindex;
     sides = ss;
   }
+  __host__ __device__ Box(const Point3 &p0,
+                          const Point3 &p1, Material *mptr,
+                          Hittable **&ss, int &i)
+      : Box(p0, p1, mptr, ss, i, SOLID) {}
 
   __device__ bool hit(const Ray &r, float t0, float t1,
                       HitRecord &rec) const override {
@@ -143,6 +147,7 @@ public:
     neg_inv_density = -1.0f / density;
     state = GAS;
     rState = loc;
+    //
     for (int i = start_index; i <= end_index; i++) {
       ss[i]->mat_ptr = new Isotropic(t);
       sides[i] = ss[i];
