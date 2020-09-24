@@ -68,6 +68,14 @@ public:
     return true;
   }
 
+  __host__ __device__ void translate(Hittable **&ss,
+                                     const Point3 &p) {
+    for (int i = start_index; i <= end_index; i++) {
+      sides[i] = new Translate(sides[i], p);
+      ss[i] = sides[i];
+    }
+  }
+
 public:
   Point3 box_min;
   Point3 box_max;
