@@ -22,11 +22,6 @@ public:
       : boundary(b), neg_inv_density(-1 / d),
         phase_function(new Isotropic(a)), rState(s) {}
 
-  __host__ __device__ ~ConstantMedium() {
-    delete boundary;
-    delete phase_function;
-  }
-
   __host__ __device__ ConstantMedium(Hittable *b, float d,
                                      Color c)
       : boundary(b), neg_inv_density(-1 / d),
@@ -37,15 +32,16 @@ public:
       : boundary(b), neg_inv_density(-1 / d),
         phase_function(new Isotropic(c)), rState(s) {}
 
-  __device__ bool hit(const Ray &r, float t_min,
-                      float t_max,
-                      HitRecord &rec) const override {
+  __host__ __device__ bool
+  hit(const Ray &r, float t_min, float t_max,
+      HitRecord &rec) const override {
     //
     // Print occasional samples when debugging. To enable,
     // set enableDebug true.
+    const bool enableDebug = false;
 
     const bool debugging =
-        enableDebug && curand_uniform(rState) < 0.00001;
+        enableDebug && randf(1) < 0.00001;
 
     HitRecord rec1, rec2;
 
@@ -75,7 +71,7 @@ public:
     const float distance_inside_boundary =
         (rec2.t - rec1.t) * ray_length;
     const float hit_distance =
-        neg_inv_density * log(curand_uniform(rState));
+        neg_inv_density * log(randf(1));
 
     if (hit_distance > distance_inside_boundary)
       return false;

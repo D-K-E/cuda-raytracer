@@ -182,4 +182,25 @@ public:
   }
 };
 
+class Isotropic : public Material {
+public:
+  __host__ __device__ Isotropic(Color c)
+      : albedo(new SolidColor(c)) {}
+  __host__ __device__ Isotropic(Texture *a) : albedo(a) {}
+
+  __device__ bool scatter(const Ray &r_in,
+                          const HitRecord &rec,
+                          Color &attenuation,
+                          Ray &scattered,
+                          curandState *loc) const override {
+    scattered =
+        Ray(rec.p, random_in_unit_sphere(loc), r_in.time());
+    attenuation = albedo->value(rec.u, rec.v, rec.p);
+    return true;
+  }
+
+public:
+  Texture *albedo;
+};
+
 #endif

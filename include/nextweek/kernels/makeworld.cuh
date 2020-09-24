@@ -6,6 +6,7 @@
 #include <nextweek/hittable.cuh>
 #include <nextweek/hittables.cuh>
 #include <nextweek/material.cuh>
+#include <nextweek/mediumc.cuh>
 #include <nextweek/ray.cuh>
 #include <nextweek/sphere.cuh>
 #include <nextweek/utils.cuh>
