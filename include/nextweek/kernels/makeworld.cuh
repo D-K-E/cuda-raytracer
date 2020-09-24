@@ -136,6 +136,7 @@ __global__ void make_empty_cornell_box(Hittables **world,
                                        Hittable **ss) {
   // declare objects
   if (threadIdx.x == 0 && blockIdx.x == 0) {
+
     Material *red = new Lambertian(Color(.65, .05, .05));
     Material *blue = new Lambertian(Color(.05, .05, .65));
     Material *white = new Lambertian(Color(.73, .73, .73));
@@ -160,6 +161,12 @@ __global__ void make_empty_cornell_box(Hittables **world,
     Box b1(bp1, bp2, white, ss, i);
     b1.rotate_y(ss, 15.0);
     b1.translate(ss, Vec3(265.0, 0.0, 295.0));
+    curandState randState;
+    curand_init(i, 0, 0, &randState);
+    b1.to_gas(0.01f, &randState, Color(1.0, 0.3, 0.7), ss);
+    i++;
+    ss[i] = b1;
+
     i++;
     Point3 bp3(0.0f);
     Point3 bp4(165.0f);

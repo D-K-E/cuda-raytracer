@@ -6,8 +6,8 @@
 #include <nextweek/material.cuh>
 #include <nextweek/utils.cuh>
 
-__host__ __device__ void get_sphere_uv(const Vec3 &p, float &u,
-                              float &v) {
+__host__ __device__ void get_sphere_uv(const Vec3 &p,
+                                       float &u, float &v) {
   auto phi = atan2(p.z(), p.x());
   auto theta = asin(p.y());
   u = 1 - (phi + M_PI) / (2 * M_PI);
@@ -17,10 +17,11 @@ __host__ __device__ void get_sphere_uv(const Vec3 &p, float &u,
 class Sphere : public Hittable {
 public:
   __host__ __device__ Sphere() {}
-  __host__ __device__ Sphere(Point3 cen, float r, Material *mat_ptr_)
+  __host__ __device__ Sphere(Point3 cen, float r,
+                             Material *mat_ptr_)
       : center(cen), radius(r), mat_ptr(mat_ptr_){};
   __host__ __device__ ~Sphere() { delete mat_ptr; }
-  __host__ __device__ bool hit(const Ray &r, float d_min,
+  __device__ bool hit(const Ray &r, float d_min,
                       float d_max,
                       HitRecord &rec) const override {
     Vec3 oc = r.origin() - center;
@@ -75,9 +76,9 @@ public:
 public:
   __host__ __device__ MovingSphere();
   __host__ __device__ ~MovingSphere() { delete mat_ptr; };
-  __host__ __device__ MovingSphere(Point3 c1, Point3 c2, float t0,
-                          float t1, float rad,
-                          Material *mat)
+  __host__ __device__ MovingSphere(Point3 c1, Point3 c2,
+                                   float t0, float t1,
+                                   float rad, Material *mat)
       : center1(c1), center2(c2), time0(t0), time1(t1),
         radius(rad), mat_ptr(mat) {}
   __host__ __device__ Point3 center(float time) const {
@@ -85,7 +86,7 @@ public:
            ((time - time0) / (time1 - time0)) *
                (center2 - center1);
   }
-  __host__ __device__ bool hit(const Ray &r, float d_min,
+  __device__ bool hit(const Ray &r, float d_min,
                       float d_max,
                       HitRecord &rec) const override {
     Point3 scenter = center(r.time());

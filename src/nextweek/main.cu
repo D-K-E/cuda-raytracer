@@ -1,5 +1,4 @@
 // libs
-#include <cstddef>
 #include <nextweek/camera.cuh>
 #include <nextweek/cbuffer.hpp>
 #include <nextweek/color.hpp>
@@ -61,7 +60,7 @@ void get_device_props() {
 
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
-  int WIDTH = 320;
+  int WIDTH = 640;
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
   int BLOCK_WIDTH = 32;
   int BLOCK_HEIGHT = 18;

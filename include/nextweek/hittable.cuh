@@ -81,9 +81,9 @@ public:
     @param rec the record object that would hold the
     parameters required by the scattering function later on.
    */
-  __host__ __device__ virtual bool
-  hit(const Ray &r, float d_min, float d_max,
-      HitRecord &rec) const = 0;
+  __device__ virtual bool hit(const Ray &r, float d_min,
+                              float d_max,
+                              HitRecord &rec) const = 0;
 
   /**
     @brief determine the bounding box of this object.
@@ -107,9 +107,9 @@ public:
                                 const Vec3 &displacement)
       : ptr(p), offset(displacement) {}
 
-  __host__ __device__ bool
-  hit(const Ray &r, float t_min, float t_max,
-      HitRecord &rec) const override {
+  __device__ bool hit(const Ray &r, float t_min,
+                      float t_max,
+                      HitRecord &rec) const override {
     Ray moved_r(r.origin() - offset, r.direction(),
                 r.time());
     if (!ptr->hit(moved_r, t_min, t_max, rec))
@@ -172,9 +172,9 @@ public:
     bbox = Aabb(min, max);
   }
 
-  __host__ __device__ bool
-  hit(const Ray &r, float t_min, float t_max,
-      HitRecord &rec) const override {
+  __device__ bool hit(const Ray &r, float t_min,
+                      float t_max,
+                      HitRecord &rec) const override {
     Point3 origin = r.origin();
     Vec3 direction = r.direction();
 

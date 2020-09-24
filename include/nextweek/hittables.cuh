@@ -50,7 +50,7 @@ public:
     @param rec struct that would hold all the necessary
     information for evaluating a bsdf.
    */
-  __host__ __device__ bool hit(const Ray &r, float d_min,
+  __device__ bool hit(const Ray &r, float d_min,
                       float d_max,
                       HitRecord &rec) const override {
     HitRecord temp;

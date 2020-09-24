@@ -54,9 +54,8 @@ public:
       ax.notAligned = 1;
     }
   }
-  __host__ __device__ bool
-  hit(const Ray &r, float t0, float t1,
-      HitRecord &rec) const override {
+  __device__ bool hit(const Ray &r, float t0, float t1,
+                      HitRecord &rec) const override {
     /*
        point of intersection satisfies
        both P = O + D*m Point = Origin + Direction *
@@ -138,8 +137,8 @@ public:
                              Material *mat)
       : AaRect(_x0, _x1, _z0, _z1, _k, mat, Vec3(0, 1, 0)),
         x0(_x0), x1(_x1), z0(_z0), z1(_z1) {}
-  float pdf_value(const Point3 &origin,
-                  const Vec3 &dir) const {
+  __device__ float pdf_value(const Point3 &origin,
+                             const Vec3 &dir) const {
     HitRecord rec;
     if (!hit(Ray(origin, dir), 0.001, FLT_MAX, rec))
       return 0;
