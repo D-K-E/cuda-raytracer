@@ -75,6 +75,13 @@ public:
       ss[i] = sides[i];
     }
   }
+  __host__ __device__ void rotate_y(Hittable **&ss,
+                                    float angle) {
+    for (int i = start_index; i <= end_index; i++) {
+      sides[i] = new RotateY(sides[i], angle);
+      ss[i] = sides[i];
+    }
+  }
 
 public:
   Point3 box_min;

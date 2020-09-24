@@ -105,7 +105,7 @@ int main() {
       thrust::device_malloc<Hittables *>(1);
   CUDA_CONTROL(cudaGetLastError());
   int box_size = 6;
-  int nb_hittable = 6 + box_size * 2 + 1;
+  int nb_hittable = 6 + box_size * 3 + 1;
   thrust::device_ptr<Hittable *> hs =
       thrust::device_malloc<Hittable *>(nb_hittable);
   CUDA_CONTROL(cudaGetLastError());

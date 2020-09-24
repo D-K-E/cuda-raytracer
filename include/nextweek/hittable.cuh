@@ -146,7 +146,7 @@ public:
     hasbox = ptr->bounding_box(0, 1, bbox);
 
     Point3 min(FLT_MAX);
-    Point3 max(FLT_MAX);
+    Point3 max(-FLT_MAX);
 
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 2; j++) {
