@@ -139,7 +139,8 @@ public:
 };
 class RotateY : public Hittable {
 public:
-  __host__ __device__ RotateY(Hittable *p, float angle) {
+  __host__ __device__ RotateY(Hittable *p, float angle)
+      : ptr(p) {
     float radians = degree_to_radian(angle);
     sin_theta = sin(radians);
     cos_theta = cos(radians);
