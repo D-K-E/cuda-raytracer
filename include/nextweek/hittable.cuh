@@ -100,6 +100,49 @@ public:
   bounding_box(float t0, float t1,
                Aabb &output_box) const = 0;
 };
+__device__ bool hit_to_hittables(Hittable **hs, int si,
+                                 int ei, const Ray &r,
+                                 float d_min, float d_max,
+                                 HitRecord &rec) {
+  //
+  HitRecord temp;
+  bool hit_anything = false;
+  float closest_far = d_max;
+  for (int i = si; i < ei; i++) {
+    const Hittable *h = hs[i];
+    bool isHit = h->hit(r, d_min, closest_far, temp);
+    if (isHit == true) {
+      hit_anything = true;
+      closest_far = temp.t;
+      rec = temp;
+    }
+  }
+  return hit_anything;
+}
+
+__host__ __device__ bool
+bounding_box_to_hittables(Hittable **hs, int si, int ei,
+                          float t0, float t1,
+                          Aabb &output_box) {
+  if (ei == 0) {
+    return false;
+  }
+  Aabb temp;
+  bool first_box = true;
+  for (int i = si; i < ei; i++) {
+    const Hittable *h = hs[i];
+    bool isBounding = h->bounding_box(t0, t1, temp);
+    if (isBounding == false) {
+      return false;
+    }
+    output_box = first_box
+                     ? temp
+                     : surrounding_box(output_box, temp);
+    first_box = false;
+    // center = output_box.center;
+  }
+  return true;
+}
 
 class Translate : public Hittable {
 public:

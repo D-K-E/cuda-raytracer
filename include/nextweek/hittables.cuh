@@ -5,24 +5,23 @@
 #include <nextweek/external.hpp>
 #include <nextweek/hittable.cuh>
 
-/**
-  @brief Scene object that gathers all of the object in the
-  scene.
-
-  Currently this is just a list of Hittable objects with a
-  current number of
-  objects.
- */
-class Hittables : public Hittable {
+class HittableGroup : public Hittable {
 public:
   Hittable **list;
-  int list_size;
+  const int start_index;
+  const int end_index;
 
 public:
-  __host__ __device__ Hittables() { list_size = 0; }
-  __host__ __device__ Hittables(Hittable **hlist, int size)
-      : list(hlist), list_size(size) {}
-  __host__ __device__ ~Hittables() { delete list; }
+  __host__ __device__ HittableGroup()
+      : start_index(0), end_index(0), list(nullptr) {}
+  __host__ __device__ HittableGroup(Hittable **&hlist,
+                                    int size)
+      : list(hlist), start_index(0), end_index(size) {}
+  __host__ __device__ HittableGroup(Hittable **&hlist,
+                                    int si, int ei)
+      : list(hlist), start_index(si), end_index(ei) {}
+
+  __host__ __device__ ~HittableGroup() { delete list; }
 
   /**
     @brief check if there is any object that is hit by
@@ -53,19 +52,8 @@ public:
   __device__ bool hit(const Ray &r, float d_min,
                       float d_max,
                       HitRecord &rec) const override {
-    HitRecord temp;
-    bool hit_anything = false;
-    float closest_far = d_max;
-    for (int i = 0; i < list_size; i++) {
-      Hittable *h = list[i];
-      bool isHit = h->hit(r, d_min, closest_far, temp);
-      if (isHit == true) {
-        hit_anything = true;
-        closest_far = temp.t;
-        rec = temp;
-      }
-    }
-    return hit_anything;
+    return hit_to_hittables(list, start_index, end_index, r,
+                            d_min, d_max, rec);
   }
 
   /**
@@ -79,25 +67,36 @@ public:
   __host__ __device__ bool
   bounding_box(float t0, float t1,
                Aabb &output_box) const override {
-    if (list_size == 0) {
-      return false;
-    }
-    Aabb temp;
-    bool first_box = true;
-    for (int i = 0; i < list_size; i++) {
-      Hittable *h = list[i];
-      bool isBounding = h->bounding_box(t0, t1, temp);
-      if (isBounding == false) {
-        return false;
-      }
-      output_box = first_box
-                       ? temp
-                       : surrounding_box(output_box, temp);
-      first_box = false;
-      // center = output_box.center;
-    }
-    return true;
+    return bounding_box_to_hittables(
+        list, start_index, end_index, t0, t1, output_box);
   }
+};
+class SafeHittableGroup : public HittableGroup {
+public:
+  __host__ __device__ SafeHittableGroup()
+      : HittableGroup() {}
+  __host__ __device__ SafeHittableGroup(Hittable **hlist,
+                                        int size)
+      : HittableGroup(hlist, size) {}
+  __host__ __device__ SafeHittableGroup(Hittable **hlist,
+                                        int si, int ei)
+      : HittableGroup(hlist, si, ei) {}
+};
+
+/**
+  @brief Scene object that gathers all of the object in the
+  scene.
+
+  Currently this is just a list of Hittable objects with a
+  current number of
+  objects.
+ */
+class Hittables : public SafeHittableGroup {
+
+public:
+  __host__ __device__ Hittables() {}
+  __host__ __device__ Hittables(Hittable **hlist, int size)
+      : SafeHittableGroup(hlist, size) {}
 };
 
 #endif
