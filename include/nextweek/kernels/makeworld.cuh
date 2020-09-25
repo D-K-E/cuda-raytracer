@@ -192,6 +192,11 @@ __global__ void make_empty_cornell_box(Hittables **world,
     b2.translate(ss, Point3(130, 0, 165));
     obj_count++;
 
+    Hittable *short_box =
+        new HittableGroup(ss, b2.start_index, b2.end_index);
+    group_count++;
+    groups[group_count] = short_box;
+
     world[0] = new Hittables(ss, obj_count);
   }
 }
