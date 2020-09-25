@@ -179,6 +179,10 @@ __global__ void make_empty_cornell_box(Hittables **world,
     b1.translate(ss, Vec3(265, 0, 295));
     // b1.to_gas(0.01f, &randState, Color(1.0, 0.3, 0.7),
     // ss);
+    Hittable *tall_box =
+        new HittableGroup(ss, b1.start_index, b1.end_index);
+    group_count++;
+    groups[group_count] = tall_box;
 
     obj_count++;
     Point3 bp3(0.0f);
