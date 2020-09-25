@@ -142,40 +142,43 @@ __global__ void make_empty_cornell_box(Hittables **world,
     Material *white = new Lambertian(Color(.73, .73, .73));
     Material *green = new Lambertian(Color(.12, .45, .15));
     Material *light = new DiffuseLight(Color(15, 15, 15));
-    int i = 0;
-    ss[i] = new YZRect(0, 555, 0, 555, 555, green);
-    i++;
-    ss[i] = new YZRect(0, 555, 0, 555, 0, red);
-    i++;
-    ss[i] = new XZRect(213, 343, 227, 332, 554, light);
-    i++;
-    ss[i] = new XZRect(0, 555, 0, 555, 0, white);
-    i++;
-    ss[i] = new XZRect(0, 555, 0, 555, 555, white);
-    i++;
-    ss[i] = new XYRect(0, 555, 0, 555, 555, blue);
-    // -------------- Boxes -------------------------
-    curandState randState;
-    curand_init(i, 0, 0, &randState);
 
-    i++;
+    int obj_count = 0;
+    int group_count = 0;
+    ss[obj_count] = new YZRect(0, 555, 0, 555, 555, green);
+    obj_count++;
+    ss[obj_count] = new YZRect(0, 555, 0, 555, 0, red);
+    obj_count++;
+    ss[obj_count] =
+        new XZRect(213, 343, 227, 332, 554, light);
+    obj_count++;
+    ss[obj_count] = new XZRect(0, 555, 0, 555, 0, white);
+    obj_count++;
+    ss[obj_count] = new XZRect(0, 555, 0, 555, 555, white);
+    obj_count++;
+    ss[obj_count] = new XYRect(0, 555, 0, 555, 555, blue);
+    // -------------- Boxes -------------------------
+    // curandState randState;
+    // curand_init(obj_count, 0, 0, &randState);
+
+    obj_count++;
     Point3 bp1(0.0f);
     Point3 bp2(165, 330, 165);
-    Box b1(bp1, bp2, white, ss, i);
+    Box b1(bp1, bp2, white, ss, obj_count);
     b1.rotate_y(ss, 15.0f);
     b1.translate(ss, Vec3(265, 0, 295));
     // b1.to_gas(0.01f, &randState, Color(1.0, 0.3, 0.7),
     // ss);
 
-    i++;
+    obj_count++;
     Point3 bp3(0.0f);
     Point3 bp4(165.0f);
-    Box b2(bp3, bp4, white, ss, i);
+    Box b2(bp3, bp4, white, ss, obj_count);
     b2.rotate_y(ss, -18.0f);
     b2.translate(ss, Point3(130, 0, 165));
-    i++;
+    obj_count++;
 
-    world[0] = new Hittables(ss, i);
+    world[0] = new Hittables(ss, obj_count);
   }
 }
 
