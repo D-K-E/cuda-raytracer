@@ -168,8 +168,6 @@ __global__ void make_empty_cornell_box(Hittables **world,
     groups[group_count] = c_box;
 
     // -------------- Boxes -------------------------
-    // curandState randState;
-    // curand_init(obj_count, 0, 0, &randState);
 
     obj_count++;
     Point3 bp1(0.0f);
@@ -181,8 +179,13 @@ __global__ void make_empty_cornell_box(Hittables **world,
     // ss);
     Hittable *tall_box =
         new HittableGroup(ss, b1.start_index, b1.end_index);
+
+    curandState randState;
+    curand_init(obj_count, 0, 0, &randState);
+    Hittable *smoke_box = new ConstantMedium(
+        tall_box, 0.01, Color(0.8f, 0.2, 0.4), &randState);
     group_count++;
-    groups[group_count] = tall_box;
+    groups[group_count] = smoke_box;
 
     obj_count++;
     Point3 bp3(0.0f);
