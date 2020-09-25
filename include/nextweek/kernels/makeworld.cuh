@@ -16,16 +16,32 @@
  Kernel that fiils the pointer of Hittables pointer.
  */
 __global__ void make_world(Hittables **world, Hittable **ss,
-                           int nx, int ny,
-                           curandState *randState, int row,
+                           curandState *randState,
+                           const int side_box_nb,
                            unsigned char *imdata,
                            int *widths, int *heights,
                            int *bytes_per_pixels) {
   if (threadIdx.x == 0 && blockIdx.x == 0) {
+    Material *ground1 =
+        new Lambertian(Color(0.48, 0.83, 0.53));
     // declare objects
     CheckerTexture *check =
         new CheckerTexture(Vec3(0.2, 0.8, 0.1));
-    Lambertian *lamb = new Lambertian(check);
+    Material *ground2 = new Lambertian(check);
+
+    for (int i = 0; i < side_box_nb; i++) {
+      for (int j = 0; j < side_box_nb; j++) {
+
+        auto w = 100.0f;
+        auto x0 = -1000.0f + i * w;
+        auto z0 = -1000.0f + j * w;
+        auto y0 = 0.0f;
+        auto x1 = x0 + w;
+        auto y1 = random_float(randState, 1, 101);
+        auto z1 = z0 + w;
+      }
+    }
+
     ss[0] = new Sphere(Vec3(0, -1000.0, -1), 1000, lamb);
     int i = 1;
     int halfRow = row / 2;
