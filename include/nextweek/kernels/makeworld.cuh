@@ -143,8 +143,13 @@ __global__ void make_empty_cornell_box(Hittables **world,
     Material *green = new Lambertian(Color(.12, .45, .15));
     Material *light = new DiffuseLight(Color(15, 15, 15));
 
+    // ----------- Groups --------------------
+    Hittable **groups = new Hittable *[3];
+
     int obj_count = 0;
     int group_count = 0;
+    // --------------- cornell box group ----------------
+
     ss[obj_count] = new YZRect(0, 555, 0, 555, 555, green);
     obj_count++;
     ss[obj_count] = new YZRect(0, 555, 0, 555, 0, red);
@@ -157,6 +162,11 @@ __global__ void make_empty_cornell_box(Hittables **world,
     ss[obj_count] = new XZRect(0, 555, 0, 555, 555, white);
     obj_count++;
     ss[obj_count] = new XYRect(0, 555, 0, 555, 555, blue);
+
+    Hittable *c_box =
+        new HittableGroup(ss, 0, obj_count + 1);
+    groups[group_count] = c_box;
+
     // -------------- Boxes -------------------------
     // curandState randState;
     // curand_init(obj_count, 0, 0, &randState);
