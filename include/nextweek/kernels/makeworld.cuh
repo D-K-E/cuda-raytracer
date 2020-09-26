@@ -25,25 +25,24 @@ __device__ void make_side_boxes(Hittable **&ss, int &ocount,
   Material *ground1 =
       new Lambertian(Color(0.48, 0.83, 0.53));
   CheckerTexture *check =
-      new CheckerTexture(Vec3(0.2, 0.8, 0.1));
+      new CheckerTexture(Vec3(1.0, 1.0, 1.0));
   Material *ground2 = new Lambertian(check);
 
   for (int i = 0; i < side_box_nb; i++) {
-    int j = 12;
-    // for (int j = 0; j < side_box_nb; j++) {
+    for (int j = 0; j < side_box_nb; j++) {
 
-    float w = 100.0f;
-    float x0 = -1000.0f + i * w;
-    float z0 = -1000.0f + j * w;
-    float y0 = 0.0f;
-    float x1 = x0 + w;
-    float y1 = random_float(randState, 1, 101);
-    float z1 = z0 + w;
-    Material *ground = i * j % 2 == 0 ? ground1 : ground2;
-    Box b(Point3(x0, y0, z0), Point3(x1, y1, z1), ground,
-          ss, ocount);
-    ocount = b.end_index;
-    //}
+      float w = 100.0f;
+      float x0 = -1000.0f + i * w;
+      float z0 = -1000.0f + j * w;
+      float y0 = 0.0f;
+      float x1 = x0 + w;
+      float y1 = random_float(randState, 1, 101);
+      float z1 = z0 + w;
+      Material *ground = i * j % 2 == 0 ? ground1 : ground2;
+      Box b(Point3(x0, y0, z0), Point3(x1, y1, z1), ground,
+            ss, ocount);
+      ocount = b.end_index;
+    }
   }
   end_index = ocount;
 }
@@ -56,10 +55,62 @@ __device__ void make_world_light(Hittable **&ss,
   const int si = ocount;
   start_index = si;
   Material *light_material =
-      new DiffuseLight(Color(7.0f, 7.0f, 7.0f));
+      new DiffuseLight(Color(8.0f, 8.0f, 8.0f));
   Hittable *light =
       new XZRect(123, 423, 147, 412, 554, light_material);
   ss[ocount] = light;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_moving_sphere(Hittable **&ss,
+                                   int &ocount,
+                                   int &start_index,
+                                   int &end_index) {
+  // ------- light -------------------
+  const int si = ocount;
+  start_index = si;
+
+  // --------- moving sphere -----------
+  Point3 cent1(400, 400, 200);
+  Point3 cent2 = cent1 + Point3(30.0f, 0.0f, 0.0f);
+  Material *moving_sphere_material =
+      new Lambertian(Color(0.7f, 0.3f, 0.1f));
+  Hittable *moving_sphere = new MovingSphere(
+      cent1, cent2, 0, 1, 50, moving_sphere_material);
+  ss[ocount] = moving_sphere;
+
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_two_sphere(Hittable **&ss, int &ocount,
+                                int &start_index,
+                                int &end_index) {
+  const int si = ocount;
+  start_index = si;
+  Hittable *sp1 = new Sphere(Point3(260, 150, 45), 50,
+                             new Dielectric(1.5f));
+  ss[ocount] = sp1;
+  end_index = ocount + 1;
+  ocount = end_index;
+
+  Hittable *sp2 =
+      new Sphere(Point3(0, 150, 145), 50,
+                 new Metal(Color(0.8f, 0.8f, 0.8f), 10.0f));
+  ss[ocount] = sp2;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_subsurface(Hittable **&ss, int &ocount,
+                                int &start_index,
+                                int &end_index) {
+  const int si = ocount;
+  start_index = si;
+  Hittable *sp3 = new Sphere(Point3(360, 150, 145), 70,
+                             new Dielectric(1.5));
+  ss[ocount] = sp3;
   end_index = ocount + 1;
   ocount = end_index;
 }
@@ -90,51 +141,24 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     Hittable *g2 =
         new HittableGroup(ss, start_index, end_index);
 
-    // Hittable *g2 = light;
+    make_moving_sphere(ss, ocount, start_index, end_index);
+
+    Hittable *g3 =
+        new HittableGroup(ss, start_index, end_index);
+
+    make_two_sphere(ss, ocount, start_index, end_index);
+    Hittable *g4 =
+        new HittableGroup(ss, start_index, end_index);
+
+    // make_subsurface(ss, ocount, start_index, end_index);
+
+    // Hittable *sp_sub =
+    //    new HittableGroup(ss, start_index, end_index);
+
+    // Hittable *g5 = new ConstantMedium(
+    //    sp_sub, 0.2f, Color(0.2, 0.4, 0.9), randState);
 
     /*
-        // --------- moving sphere -----------
-        Point3 cent1(400, 400, 200);
-        Point3 cent2 = cent1 + Point3(30.0f, 0.0f,
-       0.0f);
-        Material *moving_sphere_material =
-            new Lambertian(Color(0.7f, 0.3f, 0.1f));
-        Hittable *moving_sphere = new MovingSphere(
-            cent1, cent2, 0, 1, 50,
-       moving_sphere_material);
-
-        add_to_low_level(ss, ocount, moving_sphere);
-        Hittable *g3 =
-            new HittableGroup(ss, ocount, ocount + 1);
-
-        // ---------- add two spheres -----------
-        Hittable *sp1 = new Sphere(Point3(260, 150, 45),
-       50,
-                                   new
-       Dielectric(1.5f));
-        add_to_low_level(ss, ocount, sp1);
-        const int sp_start = ocount;
-        Hittable *sp2 = new Sphere(
-            Point3(0, 150, 145), 50,
-            new Metal(Color(0.8f, 0.8f, 0.8f), 10.0f));
-        add_to_low_level(ss, ocount, sp2);
-
-        const int sp_end = ocount + 1;
-        Hittable *g4 = new HittableGroup(ss, sp_start,
-       sp_end);
-
-        // -------- add subsurface scattering sphere
-       --------
-        Hittable *sp3 = new Sphere(Point3(360, 150,
-       145),
-       70,
-                                   new Dielectric(1.5));
-        add_to_low_level(ss, ocount, sp3);
-        Hittable *sp_sub =
-            new HittableGroup(ss, ocount, ocount + 1);
-        Hittable *g5 = new ConstantMedium(
-            sp_sub, 0.2f, Color(0.2, 0.4, 0.9),
-       randState);
 
         // ---------- add volumetric scattering box
        --------
@@ -196,18 +220,19 @@ __global__ void make_world(Hittables **world, Hittable **ss,
         Hittable *g8 =
             new HittableGroup(ss, ocount, ocount + 1);
         */
-    Hittable **groups = new Hittable *[2];
+    int group_size = 4;
+    Hittable **groups = new Hittable *[group_size];
 
     groups[0] = g1; //
     groups[1] = g2; //
-                    // g3, //
-                    // g4, //
-                    // g5, //
-                    // g6, //
-                    // g7, //
-                    // g8
+    groups[2] = g3; //
+    groups[3] = g4; //
+    // groups[4] = g5; //
+    // g6, //
+    // g7, //
+    // g8
 
-    world[0] = new Hittables(groups, 2);
+    world[0] = new Hittables(groups, group_size);
   }
 }
 void free_world(

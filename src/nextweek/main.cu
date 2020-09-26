@@ -104,11 +104,12 @@ int main() {
       thrust::device_malloc<Hittables *>(1);
   CUDA_CONTROL(cudaGetLastError());
   int box_size = 6;
-  int side_box_nb = 20;
-  int sphere_nb = 10;
+  int side_box_nb = 15;
+  int sphere_nb = 3;
   int nb_hittable = side_box_nb;
-  // nb_hittable *= side_box_nb;
+  nb_hittable *= side_box_nb;
   nb_hittable *= box_size;
+  nb_hittable += sphere_nb;
   // nb_hittable += 1;
   thrust::device_ptr<Hittable *> hs =
       thrust::device_malloc<Hittable *>(nb_hittable);
