@@ -150,10 +150,10 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     Hittable *g4 =
         new HittableGroup(ss, start_index, end_index);
 
-    // make_subsurface(ss, ocount, start_index, end_index);
+    make_subsurface(ss, ocount, start_index, end_index);
 
-    // Hittable *sp_sub =
-    //    new HittableGroup(ss, start_index, end_index);
+    Hittable *g5 =
+        new HittableGroup(ss, start_index, end_index);
 
     // Hittable *g5 = new ConstantMedium(
     //    sp_sub, 0.2f, Color(0.2, 0.4, 0.9), randState);
@@ -220,14 +220,14 @@ __global__ void make_world(Hittables **world, Hittable **ss,
         Hittable *g8 =
             new HittableGroup(ss, ocount, ocount + 1);
         */
-    int group_size = 4;
+    int group_size = 5;
     Hittable **groups = new Hittable *[group_size];
 
     groups[0] = g1; //
     groups[1] = g2; //
     groups[2] = g3; //
     groups[3] = g4; //
-    // groups[4] = g5; //
+    groups[4] = g5; //
     // g6, //
     // g7, //
     // g8

@@ -105,7 +105,7 @@ int main() {
   CUDA_CONTROL(cudaGetLastError());
   int box_size = 6;
   int side_box_nb = 15;
-  int sphere_nb = 3;
+  int sphere_nb = 4;
   int nb_hittable = side_box_nb;
   nb_hittable *= side_box_nb;
   nb_hittable *= box_size;
