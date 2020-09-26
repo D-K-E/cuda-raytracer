@@ -143,7 +143,7 @@ __device__ void make_images(Hittable **&ss, int &ocount,
 
   Material *lamb2 = new Lambertian(imtex1);
   Hittable *spImg =
-      new Sphere(Point3(400, 200, 400), 100, lamb2);
+      new Sphere(Point3(650, 400, 200), 100, lamb2);
   ss[ocount] = spImg;
   end_index = ocount + 1;
   ocount = end_index;
@@ -152,7 +152,7 @@ __device__ void make_images(Hittable **&ss, int &ocount,
       imdata, widths, heights, bytes_per_pixels, 0);
   Material *lamb3 = new Lambertian(imtex2);
   Hittable *spImg2 =
-      new Sphere(Point3(200, 100, 400), 100, lamb3);
+      new Sphere(Point3(250, 400, 200), 100, lamb3);
 
   ss[ocount] = spImg2;
   end_index = ocount + 1;

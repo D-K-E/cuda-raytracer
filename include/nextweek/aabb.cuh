@@ -14,15 +14,20 @@
   A good description is given in <a
   href="https://raytracing.github.io/books/RayTracingTheNextWeek.html#boundingvolumehierarchies/axis-alignedboundingboxes(aabbs)">P.
   Shirley's text</a>.
-  The main idea is the following for objects that inside the same Aabb, when a
-  hit occurs, their hit distance overlaps. We check that to ensure we have a
-  hit or not. Basically instead of checking all objects inside the Aabb, by
-  simply checking maximum and minimum point we check if a hit occurred.
+  The main idea is the following for objects that inside the
+  same Aabb, when a
+  hit occurs, their hit distance overlaps. We check that to
+  ensure we have a
+  hit or not. Basically instead of checking all objects
+  inside the Aabb, by
+  simply checking maximum and minimum point we check if a
+  hit occurred.
  */
 class Aabb {
 public:
   __host__ __device__ Aabb() {}
-  __host__ __device__ Aabb(const Point3 &a, const Point3 &b) {
+  __host__ __device__ Aabb(const Point3 &a,
+                           const Point3 &b) {
     _min = a;
     _max = b;
     center = (_max - _min) / 2.0;
@@ -46,7 +51,7 @@ public:
            (maxv.z() - minv.z());
   }
   __host__ __device__ bool hit(const Ray &r, float tmin,
-                      float tmax) const {
+                               float tmax) const {
     for (int a = 0; a < 3; a++) {
       float t0 = dfmin(
           (_min[a] - r.origin()[a]) / r.direction()[a],
@@ -61,12 +66,13 @@ public:
     }
     return true;
   }
+  __host__ __device__ Point3 center() const { return cent; }
 
 public:
   Point3 _min;
   Point3 _max;
   float volume;
-  Point3 center;
+  Point3 cent; // center
 };
 
 __host__ __device__ Aabb surrounding_box(Aabb b1, Aabb b2) {
