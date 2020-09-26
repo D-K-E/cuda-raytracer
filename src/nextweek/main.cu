@@ -65,7 +65,7 @@ int main() {
   int BLOCK_WIDTH = 32;
   int BLOCK_HEIGHT = 18;
   int SAMPLE_NB = 50;
-  int BOUNCE_NB = 50;
+  int BOUNCE_NB = 10;
 
   get_device_props();
 
@@ -104,8 +104,8 @@ int main() {
       thrust::device_malloc<Hittables *>(1);
   CUDA_CONTROL(cudaGetLastError());
   int box_size = 6;
-  int side_box_nb = 15;
-  int sphere_nb = 4;
+  int side_box_nb = 20;
+  int sphere_nb = 10;
   int nb_hittable = side_box_nb;
   nb_hittable *= side_box_nb;
   nb_hittable *= box_size;
@@ -116,47 +116,43 @@ int main() {
   CUDA_CONTROL(cudaGetLastError());
 
   // declara imdata
-  // std::vector<const char *> impaths =
-  // {"media/earthmap.png",
-  //                                     "media/lsjimg.png"};
-  // std::vector<int> ws, hes, nbChannels;
-  // int totalSize;
-  // std::vector<unsigned char> imdata_h;
-  // imread(impaths, ws, hes, nbChannels, imdata_h,
-  // totalSize);
+  std::vector<const char *> impaths = {"media/earthmap.png",
+                                       "media/lsjimg.png"};
+  std::vector<int> ws, hes, nbChannels;
+  int totalSize;
+  std::vector<unsigned char> imdata_h;
+  imread(impaths, ws, hes, nbChannels, imdata_h, totalSize);
   ////// thrust::device_ptr<unsigned char> imda =
   //////    thrust::device_malloc<unsigned char>(imd.size);
-  // unsigned char *h_ptr = imdata_h.data();
+  unsigned char *h_ptr = imdata_h.data();
 
-  ////// --------------------- image
-  ///------------------------
-  // thrust::device_ptr<unsigned char> imdata;
-  // upload_to_device(imdata, h_ptr, imdata_h.size());
+  // --------------------- image ------------------------
+  thrust::device_ptr<unsigned char> imdata;
+  upload_to_device(imdata, h_ptr, imdata_h.size());
 
-  // int *ws_ptr = ws.data();
+  int *ws_ptr = ws.data();
 
-  // thrust::device_ptr<int> imwidths;
-  // upload_to_device(imwidths, ws_ptr, ws.size());
+  thrust::device_ptr<int> imwidths;
+  upload_to_device(imwidths, ws_ptr, ws.size());
 
-  // thrust::device_ptr<int> imhs;
-  // int *hs_ptr = hes.data();
-  // upload_to_device(imhs, hs_ptr, hes.size());
+  thrust::device_ptr<int> imhs;
+  int *hs_ptr = hes.data();
+  upload_to_device(imhs, hs_ptr, hes.size());
 
-  // thrust::device_ptr<int> imch; // nb channels
-  // int *nb_ptr = nbChannels.data();
-  // upload_to_device(imch, nb_ptr, nbChannels.size());
+  thrust::device_ptr<int> imch; // nb channels
+  int *nb_ptr = nbChannels.data();
+  upload_to_device(imch, nb_ptr, nbChannels.size());
 
-  // CUDA_CONTROL(cudaGetLastError());
+  CUDA_CONTROL(cudaGetLastError());
 
-  make_world<<<1, 1>>>(
-      thrust::raw_pointer_cast(world),
-      thrust::raw_pointer_cast(hs),
-      thrust::raw_pointer_cast(randState2), side_box_nb
-      // thrust::raw_pointer_cast(imdata),
-      // thrust::raw_pointer_cast(imwidths),
-      // thrust::raw_pointer_cast(imhs),
-      // thrust::raw_pointer_cast(imch)
-      );
+  make_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
+                       thrust::raw_pointer_cast(hs),
+                       thrust::raw_pointer_cast(randState2),
+                       side_box_nb,
+                       thrust::raw_pointer_cast(imdata),
+                       thrust::raw_pointer_cast(imwidths),
+                       thrust::raw_pointer_cast(imhs),
+                       thrust::raw_pointer_cast(imch));
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
 
@@ -231,11 +227,11 @@ int main() {
   }
   CUDA_CONTROL(cudaDeviceSynchronize());
   CUDA_CONTROL(cudaGetLastError());
-  free_world(fb,    //
-             world, //
-             hs,    //
-             // imdata, imch, imhs, imwidths, //
-             randState1, //
+  free_world(fb,                           //
+             world,                        //
+             hs,                           //
+             imdata, imch, imhs, imwidths, //
+             randState1,                   //
              randState2);
   // free_world(fb, world, hs, randState1, randState2);
   CUDA_CONTROL(cudaGetLastError());

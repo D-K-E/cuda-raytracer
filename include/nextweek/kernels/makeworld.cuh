@@ -115,15 +115,75 @@ __device__ void make_subsurface(Hittable **&ss, int &ocount,
   ocount = end_index;
 }
 
+__device__ void make_volumetric(Hittable **&ss, int &ocount,
+                                int &start_index,
+                                int &end_index) {
+  const int si = ocount;
+  start_index = si;
+  Hittable *sp4 =
+      new Sphere(Point3(300, 250, 145), 70,
+                 new Lambertian(Color(0.5, 0.1, 0.7)));
+
+  ss[ocount] = sp4;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_images(Hittable **&ss, int &ocount,
+                            int &start_index,
+                            int &end_index,
+                            unsigned char *imdata,
+                            int *widths, int *heights,
+                            int *bytes_per_pixels) {
+  //
+  const int si = ocount;
+  start_index = si;
+  ImageTexture *imtex1 = new ImageTexture(
+      imdata, widths, heights, bytes_per_pixels, 1);
+
+  Material *lamb2 = new Lambertian(imtex1);
+  Hittable *spImg =
+      new Sphere(Point3(400, 200, 400), 100, lamb2);
+  ss[ocount] = spImg;
+  end_index = ocount + 1;
+  ocount = end_index;
+
+  ImageTexture *imtex2 = new ImageTexture(
+      imdata, widths, heights, bytes_per_pixels, 0);
+  Material *lamb3 = new Lambertian(imtex2);
+  Hittable *spImg2 =
+      new Sphere(Point3(200, 100, 400), 100, lamb3);
+
+  ss[ocount] = spImg2;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_noise(Hittable **&ss, int &ocount,
+                           int &start_index, int &end_index,
+                           curandState *randState) {
+  //
+  const int si = ocount;
+  start_index = si;
+
+  NoiseTexture *ntxt = new NoiseTexture(0.1, randState);
+  Material *met2 = new Lambertian(ntxt);
+  Hittable *noise_sp =
+      new Sphere(Point3(220, 280, 300), 80, met2);
+  ss[ocount] = noise_sp;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
 /**
  Kernel that fiils the pointer of Hittables pointer.
  */
 __global__ void make_world(Hittables **world, Hittable **ss,
                            curandState *randState,
-                           int side_box_nb
-                           // unsigned char *imdata,
-                           // int *widths, int *heights,
-                           // int *bytes_per_pixels
+                           int side_box_nb,
+                           unsigned char *imdata,
+                           int *widths, int *heights,
+                           int *bytes_per_pixels //
                            ) {
   if (threadIdx.x == 0 && blockIdx.x == 0) {
     // ------- declare counters ---------
@@ -158,69 +218,25 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     g5 = new ConstantMedium(g5, 0.2f, Color(0.2, 0.4, 0.9),
                             randState);
 
-    /*
+    make_volumetric(ss, ocount, start_index, end_index);
+    Hittable *g6 =
+        new HittableGroup(ss, start_index, end_index);
 
-        // ---------- add volumetric scattering box
-       --------
-        Hittable *sp4 =
-            new Sphere(Point3(60, 250, 145), 70,
-                       new Lambertian(Color(0.5, 0.1,
-       0.7)));
-        add_to_low_level(ss, ocount, sp4);
-        const int spvol_start = ocount;
-        Hittable *sp_vol_group =
-            new HittableGroup(ss, spvol_start, ocount +
-       1);
+    g6 = new ConstantMedium(
+        g6, 0.01f, Color(0.8f, 0.2, 0.4), randState);
 
-        Hittable *g6 = new ConstantMedium(sp_vol_group,
-       0.01f,
-                                          Color(0.8f,
-       0.2,
-       0.4),
-                                          randState);
+    make_images(ss, ocount, start_index, end_index, imdata,
+                widths, heights, bytes_per_pixels);
 
-        // ---------- add image texture
-       -------------------
+    Hittable *g7 =
+        new HittableGroup(ss, start_index, end_index);
 
-        ImageTexture *imtex1 = new ImageTexture(
-            imdata, widths, heights, bytes_per_pixels,
-       1);
+    make_noise(ss, ocount, start_index, end_index,
+               randState);
+    Hittable *g8 =
+        new HittableGroup(ss, start_index, end_index);
 
-        Material *lamb2 = new Lambertian(imtex1);
-        Hittable *spImg =
-            new Sphere(Point3(400, 200, 400), 100,
-       lamb2);
-        add_to_low_level(ss, ocount, spImg);
-        const int img_start = ocount;
-
-        ImageTexture *imtex2 = new ImageTexture(
-            imdata, widths, heights, bytes_per_pixels,
-       0);
-        Material *lamb3 = new Lambertian(imtex2);
-        Hittable *spImg2 =
-            new Sphere(Point3(200, 100, 400), 100,
-       lamb3);
-        add_to_low_level(ss, ocount, spImg2);
-
-        Hittable *g7 =
-            new HittableGroup(ss, img_start, ocount +
-       1);
-
-        // ----------- noise sphere ---------------
-
-        NoiseTexture *ntxt = new NoiseTexture(0.1,
-       randState);
-        Material *met2 = new Lambertian(ntxt);
-        Hittable *noise_sp =
-            new Sphere(Point3(220, 280, 300), 80, met2);
-        add_to_low_level(ss, ocount, noise_sp);
-        // Material *met2 = new Metal(Vec3(0.1, 0.2,
-       0.5),
-       0.3);
-        Hittable *g8 =
-            new HittableGroup(ss, ocount, ocount + 1);
-        */
-    int group_size = 5;
+    int group_size = 8;
     Hittable **groups = new Hittable *[group_size];
 
     groups[0] = g1; //
@@ -228,9 +244,9 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     groups[2] = g3; //
     groups[3] = g4; //
     groups[4] = g5; //
-    // g6, //
-    // g7, //
-    // g8
+    groups[5] = g6; //
+    groups[6] = g7; //
+    groups[7] = g8; //
 
     world[0] = new Hittables(groups, group_size);
   }
@@ -239,10 +255,10 @@ void free_world(
     thrust::device_ptr<Vec3> &fb,
     thrust::device_ptr<Hittables *> &world,
     thrust::device_ptr<Hittable *> &hs,
-    // thrust::device_ptr<unsigned char> imdata,
-    // thrust::device_ptr<int> imch,
-    // thrust::device_ptr<int> imhs,
-    // thrust::device_ptr<int>(imwidths),
+    thrust::device_ptr<unsigned char> imdata,
+    thrust::device_ptr<int> imch,
+    thrust::device_ptr<int> imhs,
+    thrust::device_ptr<int>(imwidths),
     thrust::device_ptr<curandState> randState1,
     thrust::device_ptr<curandState> randState2) {
   thrust::device_free(fb);
@@ -252,10 +268,10 @@ void free_world(
   thrust::device_free(hs);
   CUDA_CONTROL(cudaGetLastError());
   // dcam.free();
-  // thrust::device_free(imdata);
-  // thrust::device_free(imch);
-  // thrust::device_free(imhs);
-  // thrust::device_free(imwidths);
+  thrust::device_free(imdata);
+  thrust::device_free(imch);
+  thrust::device_free(imhs);
+  thrust::device_free(imwidths);
   // free(ws_ptr);
   // free(nb_ptr);
   // free(hs_ptr);
