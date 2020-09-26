@@ -21,6 +21,25 @@ the digestion of newly coded material as per the project of Roger Allen.
 The overall project structure is also arranged to make it easier to
 integrate with other projects.
 
+## Building
+
+Assuming you have clang 9+, cmake 3.18+,  a recent cuda compatible
+hardware, and CUDA toolkit (the code base is developped with CUDA 11 but it
+should be compatible with previous versions as well, no range reserving, or
+managed cudaMallocManaged etc).
+
+- `cd build`
+
+- `ccmake ..`
+ 
+Choose your compiler (clang++) and cuda toolkit location. Then configure and
+generate.
+
+- `make install`
+
+Depending on your compute capability gpu card you should modify
+`CMakeLists.txt` file.
+
 All of the images below are realized with the following specs:
 
 - Device name: Quadro M2000M

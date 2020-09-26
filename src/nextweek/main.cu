@@ -104,7 +104,12 @@ int main() {
       thrust::device_malloc<Hittables *>(1);
   CUDA_CONTROL(cudaGetLastError());
   int box_size = 6;
-  int nb_hittable = 6 + box_size * 3 + 1;
+  int side_box_nb = 20;
+  int sphere_nb = 10;
+  int nb_hittable = side_box_nb;
+  // nb_hittable *= side_box_nb;
+  nb_hittable *= box_size;
+  // nb_hittable += 1;
   thrust::device_ptr<Hittable *> hs =
       thrust::device_malloc<Hittable *>(nb_hittable);
   CUDA_CONTROL(cudaGetLastError());
@@ -118,11 +123,12 @@ int main() {
   // std::vector<unsigned char> imdata_h;
   // imread(impaths, ws, hes, nbChannels, imdata_h,
   // totalSize);
-  //// thrust::device_ptr<unsigned char> imda =
-  ////    thrust::device_malloc<unsigned char>(imd.size);
+  ////// thrust::device_ptr<unsigned char> imda =
+  //////    thrust::device_malloc<unsigned char>(imd.size);
   // unsigned char *h_ptr = imdata_h.data();
 
-  //// --------------------- image ------------------------
+  ////// --------------------- image
+  ///------------------------
   // thrust::device_ptr<unsigned char> imdata;
   // upload_to_device(imdata, h_ptr, imdata_h.size());
 
@@ -141,17 +147,15 @@ int main() {
 
   // CUDA_CONTROL(cudaGetLastError());
 
-  // make_world<<<1, 1>>>(
-  //    thrust::raw_pointer_cast(world),
-  //    thrust::raw_pointer_cast(hs), WIDTH, HEIGHT,
-  //    thrust::raw_pointer_cast(randState2), row,
-  //    thrust::raw_pointer_cast(imdata),
-  //    thrust::raw_pointer_cast(imwidths),
-  //    thrust::raw_pointer_cast(imhs),
-  //    thrust::raw_pointer_cast(imch));
-  make_empty_cornell_box<<<1, 1>>>(
+  make_world<<<1, 1>>>(
       thrust::raw_pointer_cast(world),
-      thrust::raw_pointer_cast(hs));
+      thrust::raw_pointer_cast(hs),
+      thrust::raw_pointer_cast(randState2), side_box_nb
+      // thrust::raw_pointer_cast(imdata),
+      // thrust::raw_pointer_cast(imwidths),
+      // thrust::raw_pointer_cast(imhs),
+      // thrust::raw_pointer_cast(imch)
+      );
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
 
@@ -182,7 +186,7 @@ int main() {
 
   // nextweek empty cornell box specification
 
-  Vec3 lookfrom(278, 278, -800);
+  Vec3 lookfrom(478, 278, -600);
   Vec3 lookat(278, 278, 0);
   Vec3 wup(0, 1, 0);
   float vfov = 40.0f;
@@ -226,9 +230,13 @@ int main() {
   }
   CUDA_CONTROL(cudaDeviceSynchronize());
   CUDA_CONTROL(cudaGetLastError());
-  // free_world(fb, world, hs, imdata, imch, imhs,
-  //               imwidths, randState1, randState2);
-  free_empty_cornell(fb, world, hs, randState1, randState2);
+  free_world(fb,    //
+             world, //
+             hs,    //
+             // imdata, imch, imhs, imwidths, //
+             randState1, //
+             randState2);
+  // free_world(fb, world, hs, randState1, randState2);
   CUDA_CONTROL(cudaGetLastError());
 
   cudaDeviceReset();
