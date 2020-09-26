@@ -155,8 +155,8 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     Hittable *g5 =
         new HittableGroup(ss, start_index, end_index);
 
-    // Hittable *g5 = new ConstantMedium(
-    //    sp_sub, 0.2f, Color(0.2, 0.4, 0.9), randState);
+    g5 = new ConstantMedium(g5, 0.2f, Color(0.2, 0.4, 0.9),
+                            randState);
 
     /*
 
