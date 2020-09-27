@@ -89,6 +89,58 @@ void imread(std::vector<const char *> impaths,
   }
 }
 
+template <typename T>
+__host__ __device__ void swap(T *&hlist, int index_h1,
+                              int index_h2) {
+  T temp = hlist[index_h1];
+  hlist[index_h1] = hlist[index_h2];
+  hlist[index_h2] = temp;
+}
+
+template <typename T>
+__host__ __device__ void odd_even_sort(T *&hlist,
+                                       int list_size) {
+  bool sorted = false;
+  while (!sorted) {
+    sorted = true;
+    for (int i = 1; i < list_size - 1; i += 2) {
+      if (hlist[i] > hlist[i + 1]) {
+        swap(hlist, i, i + 1);
+        sorted = false;
+      }
+    }
+    for (int i = 0; i < list_size - 1; i += 2) {
+      if (hlist[i] > hlist[i + 1]) {
+        swap(hlist, i, i + 1);
+        sorted = false;
+      }
+    }
+  }
+}
+
+template <class T, class U>
+__host__ __device__ void odd_even_sort(T *&hlist, U *&ulst,
+                                       int list_size) {
+  bool sorted = false;
+  while (!sorted) {
+    sorted = true;
+    for (int i = 1; i < list_size - 1; i += 2) {
+      if (hlist[i] > hlist[i + 1]) {
+        swap(hlist, i, i + 1);
+        swap(ulst, i, i + 1);
+        sorted = false;
+      }
+    }
+    for (int i = 0; i < list_size - 1; i += 2) {
+      if (hlist[i] > hlist[i + 1]) {
+        swap(hlist, i, i + 1);
+        swap(ulst, i, i + 1);
+        sorted = false;
+      }
+    }
+  }
+}
+
 // bvh related utils
 // from nvidia post
 // https://developer.nvidia.com/blog/thinking-parallel-part-iii-tree-construction-gpu/

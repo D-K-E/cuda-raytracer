@@ -7,12 +7,6 @@
 #include <nextweek/utils.cuh>
 #include <nextweek/vec3.cuh>
 
-__host__ __device__ void swap(Hittable **hlist,
-                              int index_h1, int index_h2) {
-  Hittable *temp = hlist[index_h1];
-  hlist[index_h1] = hlist[index_h2];
-  hlist[index_h2] = temp;
-}
 
 class BvhNode : public Hittable {
 public:
