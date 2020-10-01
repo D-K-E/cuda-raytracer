@@ -3,6 +3,7 @@
 
 #include <nextweek/aarect.cuh>
 #include <nextweek/box.cuh>
+#include <nextweek/dbscan.cuh>
 #include <nextweek/hittable.cuh>
 #include <nextweek/hittables.cuh>
 #include <nextweek/material.cuh>
@@ -16,8 +17,8 @@
  Kernel that fiils the pointer of Hittables pointer.
  */
 __global__ void make_world(Hittables **world, Hittable **ss,
-                           int nx, int ny,
-                           curandState *randState, int row,
+                           curandState *randState,
+                           int side_box_nb, int *labels,
                            unsigned char *imdata,
                            int *widths, int *heights,
                            int *bytes_per_pixels) {
@@ -69,6 +70,9 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     NoiseTexture *ntxt = new NoiseTexture(4.3, randState);
     Material *met2 = new Lambertian(ntxt);
     // Material *met2 = new Metal(Vec3(0.1, 0.2, 0.5), 0.3);
+
+    int group_size = 8;
+    Hittable **groups = new Hittable *[group_size];
 
     ss[i++] = new Sphere(Vec3(4, 1, 0), 1.0, met2);
 
@@ -132,8 +136,8 @@ __device__ void make_box(Hittable **s, int &i,
                     mptr);
 }
 
-__global__ void make_empty_cornell_box(Hittables **world,
-                                       Hittable **ss) {
+__global__ void make_filled_cornell_box(Hittables **world,
+                                        Hittable **ss) {
   // declare objects
   if (threadIdx.x == 0 && blockIdx.x == 0) {
 
@@ -202,6 +206,47 @@ __global__ void make_empty_cornell_box(Hittables **world,
 
     group_count++;
     groups[group_count] = smoke_box2;
+
+    group_count++;
+
+    world[0] = new Hittables(groups, group_count);
+  }
+}
+
+__global__ void make_empty_cornell_box(Hittables **world,
+                                       Hittable **ss) {
+  // declare objects
+  if (threadIdx.x == 0 && blockIdx.x == 0) {
+
+    Material *red = new Lambertian(Color(.65, .05, .05));
+    Material *blue = new Lambertian(Color(.05, .05, .65));
+    Material *white = new Lambertian(Color(.73, .73, .73));
+    Material *green = new Lambertian(Color(.12, .45, .15));
+    Material *light = new DiffuseLight(Color(15, 15, 15));
+
+    // ----------- Groups --------------------
+    Hittable **groups = new Hittable *[3];
+
+    int obj_count = 0;
+    int group_count = 0;
+    // --------------- cornell box group ----------------
+
+    ss[obj_count] = new YZRect(0, 555, 0, 555, 555, green);
+    obj_count++;
+    ss[obj_count] = new YZRect(0, 555, 0, 555, 0, red);
+    obj_count++;
+    ss[obj_count] =
+        new XZRect(213, 343, 227, 332, 554, light);
+    obj_count++;
+    ss[obj_count] = new XZRect(0, 555, 0, 555, 0, white);
+    obj_count++;
+    ss[obj_count] = new XZRect(0, 555, 0, 555, 555, white);
+    obj_count++;
+    ss[obj_count] = new XYRect(0, 555, 0, 555, 555, blue);
+
+    Hittable *c_box =
+        new HittableGroup(ss, 0, obj_count + 1);
+    groups[group_count] = c_box;
 
     group_count++;
 

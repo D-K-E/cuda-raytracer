@@ -60,7 +60,7 @@ KernelArg<T> mkKernelArg(thrust::device_vector<T> &dvec) {
   return karg;
 }
 template <typename T>
-KernelArg<T> mkKernelArg(thrust::host_vector<T> hvec) {
+KernelArg<T> mkKernelArg(thrust::host_vector<T> &hvec) {
   return mkKernelArg<T>(to_device_vec<T>(hvec));
 }
 

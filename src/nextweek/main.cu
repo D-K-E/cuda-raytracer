@@ -58,6 +58,34 @@ void get_device_props() {
   }
 }
 
+Camera makeCam(int WIDTH, int HEIGHT) {
+  // one weekend final camera specification
+  // Vec3 lookfrom(13, 2, 3);
+  // Vec3 lookat(0, 0, 0);
+  // Vec3 wup(0, 1, 0);
+  // float vfov = 20.0f;
+  // float aspect_r = float(WIDTH) / float(HEIGHT);
+  // float dist_to_focus = 10.0;
+  //(lookfrom - lookat).length();
+  // float aperture = 0.1;
+  // float t0 = 0.0f, t1 = 1.0f;
+
+  // nextweek empty cornell box specification
+
+  Vec3 lookfrom(478, 278, -600);
+  Vec3 lookat(278, 278, 0);
+  Vec3 wup(0, 1, 0);
+  float vfov = 40.0f;
+  float aspect_r = float(WIDTH) / float(HEIGHT);
+  float dist_to_focus = (lookfrom - lookat).length();
+  float aperture = 0.0;
+  float t0 = 0.0f, t1 = 1.0f;
+
+  Camera cam(lookfrom, lookat, wup, vfov, aspect_r,
+             aperture, dist_to_focus, t0, t1);
+  return cam;
+}
+
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
   int WIDTH = 320;
@@ -110,48 +138,46 @@ int main() {
   CUDA_CONTROL(cudaGetLastError());
 
   // declara imdata
-  // std::vector<const char *> impaths =
-  // {"media/earthmap.png",
-  //                                     "media/lsjimg.png"};
-  // std::vector<int> ws, hes, nbChannels;
-  // int totalSize;
-  // std::vector<unsigned char> imdata_h;
-  // imread(impaths, ws, hes, nbChannels, imdata_h,
-  // totalSize);
-  //// thrust::device_ptr<unsigned char> imda =
-  ////    thrust::device_malloc<unsigned char>(imd.size);
-  // unsigned char *h_ptr = imdata_h.data();
+  std::vector<const char *> impaths = {"media/earthmap.png",
+                                       "media/lsjimg.png"};
+  std::vector<int> ws, hes, nbChannels;
+  int totalSize;
+  std::vector<unsigned char> imdata_h;
+  imread(impaths, ws, hes, nbChannels, imdata_h, totalSize);
+  ////// thrust::device_ptr<unsigned char> imda =
+  //////    thrust::device_malloc<unsigned char>(imd.size);
+  unsigned char *h_ptr = imdata_h.data();
 
-  //// --------------------- image ------------------------
-  // thrust::device_ptr<unsigned char> imdata;
-  // upload_to_device(imdata, h_ptr, imdata_h.size());
+  // --------------------- image ------------------------
+  thrust::device_ptr<unsigned char> imdata;
+  upload_to_device(imdata, h_ptr, imdata_h.size());
 
-  // int *ws_ptr = ws.data();
+  int *ws_ptr = ws.data();
 
-  // thrust::device_ptr<int> imwidths;
-  // upload_to_device(imwidths, ws_ptr, ws.size());
+  thrust::device_ptr<int> imwidths;
+  upload_to_device(imwidths, ws_ptr, ws.size());
 
-  // thrust::device_ptr<int> imhs;
-  // int *hs_ptr = hes.data();
-  // upload_to_device(imhs, hs_ptr, hes.size());
+  thrust::device_ptr<int> imhs;
+  int *hs_ptr = hes.data();
+  upload_to_device(imhs, hs_ptr, hes.size());
 
-  // thrust::device_ptr<int> imch; // nb channels
-  // int *nb_ptr = nbChannels.data();
-  // upload_to_device(imch, nb_ptr, nbChannels.size());
+  thrust::device_ptr<int> imch; // nb channels
+  int *nb_ptr = nbChannels.data();
+  upload_to_device(imch, nb_ptr, nbChannels.size());
 
-  // CUDA_CONTROL(cudaGetLastError());
+  CUDA_CONTROL(cudaGetLastError());
+  thrust::device_ptr<int> d_labels =
+      thrust::device_malloc<int>(nb_hittable);
 
-  // make_world<<<1, 1>>>(
-  //    thrust::raw_pointer_cast(world),
-  //    thrust::raw_pointer_cast(hs), WIDTH, HEIGHT,
-  //    thrust::raw_pointer_cast(randState2), row,
-  //    thrust::raw_pointer_cast(imdata),
-  //    thrust::raw_pointer_cast(imwidths),
-  //    thrust::raw_pointer_cast(imhs),
-  //    thrust::raw_pointer_cast(imch));
-  make_empty_cornell_box<<<1, 1>>>(
-      thrust::raw_pointer_cast(world),
-      thrust::raw_pointer_cast(hs));
+  make_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
+                       thrust::raw_pointer_cast(hs),
+                       thrust::raw_pointer_cast(randState2),
+                       side_box_nb,
+                       thrust::raw_pointer_cast(d_labels),
+                       thrust::raw_pointer_cast(imdata),
+                       thrust::raw_pointer_cast(imwidths),
+                       thrust::raw_pointer_cast(imhs),
+                       thrust::raw_pointer_cast(imch));
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
 
@@ -169,30 +195,7 @@ int main() {
 
   // declare camera
 
-  // one weekend final camera specification
-  // Vec3 lookfrom(13, 2, 3);
-  // Vec3 lookat(0, 0, 0);
-  // Vec3 wup(0, 1, 0);
-  // float vfov = 20.0f;
-  // float aspect_r = float(WIDTH) / float(HEIGHT);
-  // float dist_to_focus = 10.0;
-  //(lookfrom - lookat).length();
-  // float aperture = 0.1;
-  // float t0 = 0.0f, t1 = 1.0f;
-
-  // nextweek empty cornell box specification
-
-  Vec3 lookfrom(278, 278, -800);
-  Vec3 lookat(278, 278, 0);
-  Vec3 wup(0, 1, 0);
-  float vfov = 40.0f;
-  float aspect_r = float(WIDTH) / float(HEIGHT);
-  float dist_to_focus = (lookfrom - lookat).length();
-  float aperture = 0.0;
-  float t0 = 0.0f, t1 = 1.0f;
-
-  Camera cam(lookfrom, lookat, wup, vfov, aspect_r,
-             aperture, dist_to_focus, t0, t1);
+  Camera cam = makeCam(WIDTH, HEIGHT);
 
   render<<<blocks, threads>>>(
       thrust::raw_pointer_cast(fb), WIDTH, HEIGHT,
