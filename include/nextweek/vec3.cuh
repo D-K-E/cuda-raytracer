@@ -198,7 +198,8 @@ __host__ __device__ inline Vec3 &Vec3::operator/=(float v) {
 __host__ __device__ inline Vec3 to_unit(Vec3 v) {
   return v / v.length();
 }
-__host__ __device__ inline Vec3 distance(Vec3 v1, Vec3 v2) {
+__host__ __device__ inline float distance(Vec3 v1,
+                                          Vec3 v2) {
   return (v1 - v2).length();
 }
 
@@ -241,6 +242,12 @@ __device__ Vec3 random_vec(curandState *local_rand_state,
   return Vec3(random_float(local_rand_state, mn, mx),
               random_float(local_rand_state, mn, mx),
               random_float(local_rand_state, mn, mx));
+}
+__device__ Vec3 random_vec(curandState *local_rand_state,
+                           float mx, float my, float mz) {
+  return Vec3(random_float(local_rand_state, 0, mx),
+              random_float(local_rand_state, 0, my),
+              random_float(local_rand_state, 0, mz));
 }
 
 __device__ Vec3

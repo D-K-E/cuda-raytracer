@@ -2,6 +2,7 @@
 #ifndef DBSCAN_CUH
 #define DBSCAN_CUH
 
+// k nearest neighbour acceleration structure
 #include <nextweek/external.hpp>
 #include <nextweek/ray.cuh>
 #include <nextweek/utils.cuh>
@@ -128,5 +129,4 @@ __host__ __device__ void dbscan(Hittable **&hs, int gsize,
     }
   }
 }
-
 #endif

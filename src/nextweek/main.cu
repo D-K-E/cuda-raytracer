@@ -92,8 +92,8 @@ int main() {
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
   int BLOCK_WIDTH = 32;
   int BLOCK_HEIGHT = 18;
-  int SAMPLE_NB = 100;
-  int BOUNCE_NB = 50;
+  int SAMPLE_NB = 50;
+  int BOUNCE_NB = 10;
 
   get_device_props();
 
@@ -132,7 +132,13 @@ int main() {
       thrust::device_malloc<Hittables *>(1);
   CUDA_CONTROL(cudaGetLastError());
   int box_size = 6;
-  int nb_hittable = 6 + box_size * 3 + 1;
+  int side_box_nb = 20;
+  int sphere_nb = 10;
+  int nb_hittable = side_box_nb;
+  nb_hittable *= side_box_nb;
+  nb_hittable *= box_size;
+  nb_hittable += sphere_nb;
+  // nb_hittable += 1;
   thrust::device_ptr<Hittable *> hs =
       thrust::device_malloc<Hittable *>(nb_hittable);
   CUDA_CONTROL(cudaGetLastError());
@@ -166,14 +172,11 @@ int main() {
   upload_to_device(imch, nb_ptr, nbChannels.size());
 
   CUDA_CONTROL(cudaGetLastError());
-  thrust::device_ptr<int> d_labels =
-      thrust::device_malloc<int>(nb_hittable);
 
   make_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
                        thrust::raw_pointer_cast(hs),
                        thrust::raw_pointer_cast(randState2),
                        side_box_nb,
-                       thrust::raw_pointer_cast(d_labels),
                        thrust::raw_pointer_cast(imdata),
                        thrust::raw_pointer_cast(imwidths),
                        thrust::raw_pointer_cast(imhs),
@@ -194,7 +197,6 @@ int main() {
   CUDA_CONTROL(cudaDeviceSynchronize());
 
   // declare camera
-
   Camera cam = makeCam(WIDTH, HEIGHT);
 
   render<<<blocks, threads>>>(
@@ -229,9 +231,13 @@ int main() {
   }
   CUDA_CONTROL(cudaDeviceSynchronize());
   CUDA_CONTROL(cudaGetLastError());
-  // free_world(fb, world, hs, imdata, imch, imhs,
-  //               imwidths, randState1, randState2);
-  free_empty_cornell(fb, world, hs, randState1, randState2);
+  free_world(fb,                           //
+             world,                        //
+             hs,                           //
+             imdata, imch, imhs, imwidths, //
+             randState1,                   //
+             randState2);
+  // free_world(fb, world, hs, randState1, randState2);
   CUDA_CONTROL(cudaGetLastError());
 
   cudaDeviceReset();

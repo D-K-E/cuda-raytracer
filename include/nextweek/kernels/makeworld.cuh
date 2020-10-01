@@ -13,70 +13,243 @@
 #include <nextweek/utils.cuh>
 #include <nextweek/vec3.cuh>
 
+__device__ void make_side_boxes(Hittable **&ss, int &ocount,
+                                int &start_index,
+                                int &end_index,
+                                int side_box_nb,
+                                curandState *randState) {
+  // ------- side boxes --------------
+  const int sind = ocount;
+  start_index = sind;
+
+  // ------- side box materials ------
+  Material *ground1 =
+      new Lambertian(Color(0.48, 0.83, 0.53));
+  CheckerTexture *check =
+      new CheckerTexture(Vec3(1.0, 1.0, 1.0));
+  Material *ground2 = new Lambertian(check);
+
+  for (int i = 0; i < side_box_nb; i++) {
+    for (int j = 0; j < side_box_nb; j++) {
+
+      float w = 100.0f;
+      float x0 = -1000.0f + i * w;
+      float z0 = -1000.0f + j * w;
+      float y0 = 0.0f;
+      float x1 = x0 + w;
+      float y1 = random_float(randState, 1, 101);
+      float z1 = z0 + w;
+      Material *ground = i * j % 2 == 0 ? ground1 : ground2;
+      Box b(Point3(x0, y0, z0), Point3(x1, y1, z1), ground,
+            ss, ocount);
+      ocount = b.end_index;
+    }
+  }
+  end_index = ocount;
+}
+
+__device__ void make_world_light(Hittable **&ss,
+                                 int &ocount,
+                                 int &start_index,
+                                 int &end_index) {
+  // ------- light -------------------
+  const int si = ocount;
+  start_index = si;
+  Material *light_material =
+      new DiffuseLight(Color(8.0f, 8.0f, 8.0f));
+  Hittable *light =
+      new XZRect(123, 423, 147, 412, 554, light_material);
+  ss[ocount] = light;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_moving_sphere(Hittable **&ss,
+                                   int &ocount,
+                                   int &start_index,
+                                   int &end_index) {
+  // ------- light -------------------
+  const int si = ocount;
+  start_index = si;
+
+  // --------- moving sphere -----------
+  Point3 cent1(400, 400, 200);
+  Point3 cent2 = cent1 + Point3(30.0f, 0.0f, 0.0f);
+  Material *moving_sphere_material =
+      new Lambertian(Color(0.7f, 0.3f, 0.1f));
+  Hittable *moving_sphere = new MovingSphere(
+      cent1, cent2, 0, 1, 50, moving_sphere_material);
+  ss[ocount] = moving_sphere;
+
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_two_sphere(Hittable **&ss, int &ocount,
+                                int &start_index,
+                                int &end_index) {
+  const int si = ocount;
+  start_index = si;
+  Hittable *sp1 = new Sphere(Point3(260, 150, 45), 50,
+                             new Dielectric(1.5f));
+  ss[ocount] = sp1;
+  end_index = ocount + 1;
+  ocount = end_index;
+
+  Hittable *sp2 =
+      new Sphere(Point3(0, 150, 145), 50,
+                 new Metal(Color(0.8f, 0.8f, 0.8f), 10.0f));
+  ss[ocount] = sp2;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_subsurface(Hittable **&ss, int &ocount,
+                                int &start_index,
+                                int &end_index) {
+  const int si = ocount;
+  start_index = si;
+  Hittable *sp3 = new Sphere(Point3(360, 150, 145), 70,
+                             new Dielectric(1.5));
+  ss[ocount] = sp3;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_volumetric(Hittable **&ss, int &ocount,
+                                int &start_index,
+                                int &end_index) {
+  const int si = ocount;
+  start_index = si;
+  Hittable *sp4 =
+      new Sphere(Point3(300, 250, 145), 70,
+                 new Lambertian(Color(0.5, 0.1, 0.7)));
+
+  ss[ocount] = sp4;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_images(Hittable **&ss, int &ocount,
+                            int &start_index,
+                            int &end_index,
+                            unsigned char *imdata,
+                            int *widths, int *heights,
+                            int *bytes_per_pixels) {
+  //
+  const int si = ocount;
+  start_index = si;
+  ImageTexture *imtex1 = new ImageTexture(
+      imdata, widths, heights, bytes_per_pixels, 1);
+
+  Material *lamb2 = new Lambertian(imtex1);
+  Hittable *spImg =
+      new Sphere(Point3(650, 400, 200), 100, lamb2);
+  ss[ocount] = spImg;
+  end_index = ocount + 1;
+  ocount = end_index;
+
+  ImageTexture *imtex2 = new ImageTexture(
+      imdata, widths, heights, bytes_per_pixels, 0);
+  Material *lamb3 = new Lambertian(imtex2);
+  Hittable *spImg2 =
+      new Sphere(Point3(250, 400, 200), 100, lamb3);
+
+  ss[ocount] = spImg2;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
+__device__ void make_noise(Hittable **&ss, int &ocount,
+                           int &start_index, int &end_index,
+                           curandState *randState) {
+  //
+  const int si = ocount;
+  start_index = si;
+
+  NoiseTexture *ntxt = new NoiseTexture(0.1, randState);
+  Material *met2 = new Lambertian(ntxt);
+  Hittable *noise_sp =
+      new Sphere(Point3(220, 280, 300), 80, met2);
+  ss[ocount] = noise_sp;
+  end_index = ocount + 1;
+  ocount = end_index;
+}
+
 /**
  Kernel that fiils the pointer of Hittables pointer.
  */
 __global__ void make_world(Hittables **world, Hittable **ss,
                            curandState *randState,
-                           int side_box_nb, int *labels,
+                           int side_box_nb,
                            unsigned char *imdata,
                            int *widths, int *heights,
-                           int *bytes_per_pixels) {
+                           int *bytes_per_pixels //
+                           ) {
   if (threadIdx.x == 0 && blockIdx.x == 0) {
-    // declare objects
-    CheckerTexture *check =
-        new CheckerTexture(Vec3(0.2, 0.8, 0.1));
-    Lambertian *lamb = new Lambertian(check);
-    ss[0] = new Sphere(Vec3(0, -1000.0, -1), 1000, lamb);
-    int i = 1;
-    int halfRow = row / 2;
-    for (int a = -halfRow; a < halfRow; a++) {
-      for (int b = -halfRow; b < halfRow; b++) {
-        float choose_mat = curand_uniform(randState);
-        Vec3 center(a + curand_uniform(randState), 0.2,
-                    b + curand_uniform(randState));
-        if (choose_mat < 0.8f) {
-          Point3 center2 =
-              center +
-              Vec3(0, random_float(randState, 0.0, 0.5), 0);
-          Color albedo = random_vec(randState);
-          albedo *= random_vec(randState);
-          Material *lamb1 = new Lambertian(albedo);
-          ss[i++] = new MovingSphere(center, center2, 0.0,
-                                     1.0, 0.2, lamb1);
-        } else if (choose_mat < 0.95f) {
+    // ------- declare counters ---------
+    int ocount = 0; // object counter
+    int start_index;
+    int end_index;
+    make_side_boxes(ss, ocount, start_index, end_index,
+                    side_box_nb, randState);
 
-          Material *met = new Metal(
-              Vec3(0.7f), 0.5f * curand_uniform(randState));
-          ss[i++] = new Sphere(center, 0.2, met);
-        } else {
-          Material *diel = new Dielectric(1.5);
-          ss[i++] = new Sphere(center, 0.2, diel);
-        }
-      }
-    }
+    Hittable *g1 =
+        new HittableGroup(ss, start_index, end_index);
 
-    Material *diel = new Dielectric(1.5);
-    ss[i++] = new Sphere(Vec3(0, 1, 0), 1.0, diel);
+    make_world_light(ss, ocount, start_index, end_index);
 
-    ImageTexture *imtex1 = new ImageTexture(
-        imdata, widths, heights, bytes_per_pixels, 1);
+    Hittable *g2 =
+        new HittableGroup(ss, start_index, end_index);
 
-    Material *lamb2 = new Lambertian(imtex1);
-    ss[i++] = new Sphere(Vec3(-4, 1, 0), 1.3, lamb2);
+    make_moving_sphere(ss, ocount, start_index, end_index);
 
-    // ImageTexture *imtex2 = new ImageTexture(
-    //    imdata, widths, heights, bytes_per_pixels, 0);
-    NoiseTexture *ntxt = new NoiseTexture(4.3, randState);
-    Material *met2 = new Lambertian(ntxt);
-    // Material *met2 = new Metal(Vec3(0.1, 0.2, 0.5), 0.3);
+    Hittable *g3 =
+        new HittableGroup(ss, start_index, end_index);
+
+    make_two_sphere(ss, ocount, start_index, end_index);
+    Hittable *g4 =
+        new HittableGroup(ss, start_index, end_index);
+
+    make_subsurface(ss, ocount, start_index, end_index);
+
+    Hittable *g5 =
+        new HittableGroup(ss, start_index, end_index);
+
+    g5 = new ConstantMedium(g5, 0.2f, Color(0.2, 0.4, 0.9),
+                            randState);
+
+    make_volumetric(ss, ocount, start_index, end_index);
+    Hittable *g6 =
+        new HittableGroup(ss, start_index, end_index);
+
+    g6 = new ConstantMedium(
+        g6, 0.01f, Color(0.8f, 0.2, 0.4), randState);
+
+    make_images(ss, ocount, start_index, end_index, imdata,
+                widths, heights, bytes_per_pixels);
+
+    Hittable *g7 =
+        new HittableGroup(ss, start_index, end_index);
+
+    make_noise(ss, ocount, start_index, end_index,
+               randState);
+    Hittable *g8 =
+        new HittableGroup(ss, start_index, end_index);
 
     int group_size = 8;
     Hittable **groups = new Hittable *[group_size];
 
-    ss[i++] = new Sphere(Vec3(4, 1, 0), 1.0, met2);
+    groups[0] = g1; //
+    groups[1] = g2; //
+    groups[2] = g3; //
+    groups[3] = g4; //
+    groups[4] = g5; //
+    groups[5] = g6; //
+    groups[6] = g7; //
+    groups[7] = g8; //
 
-    world[0] = new Hittables(ss, 22 * 22 + 1 + 3);
+    world[0] = new Hittables(groups, group_size);
   }
 }
 void free_world(
