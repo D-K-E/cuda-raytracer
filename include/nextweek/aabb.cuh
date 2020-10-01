@@ -30,7 +30,7 @@ public:
                            const Point3 &b) {
     _min = a;
     _max = b;
-    center = (_max - _min) / 2.0;
+    cent = (_max - _min) / 2.0;
     volume = compute_box_volume(a, b);
   }
 

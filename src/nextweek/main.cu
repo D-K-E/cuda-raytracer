@@ -58,6 +58,35 @@ void get_device_props() {
   }
 }
 
+Camera makeCam(int WIDTH, int HEIGHT) {
+
+  // one weekend final camera specification
+  // Vec3 lookfrom(13, 2, 3);
+  // Vec3 lookat(0, 0, 0);
+  // Vec3 wup(0, 1, 0);
+  // float vfov = 20.0f;
+  // float aspect_r = float(WIDTH) / float(HEIGHT);
+  // float dist_to_focus = 10.0;
+  //(lookfrom - lookat).length();
+  // float aperture = 0.1;
+  // float t0 = 0.0f, t1 = 1.0f;
+
+  // nextweek empty cornell box specification
+
+  Vec3 lookfrom(478, 278, -600);
+  Vec3 lookat(278, 278, 0);
+  Vec3 wup(0, 1, 0);
+  float vfov = 40.0f;
+  float aspect_r = float(WIDTH) / float(HEIGHT);
+  float dist_to_focus = (lookfrom - lookat).length();
+  float aperture = 0.0;
+  float t0 = 0.0f, t1 = 1.0f;
+
+  Camera cam(lookfrom, lookat, wup, vfov, aspect_r,
+             aperture, dist_to_focus, t0, t1);
+  return cam;
+}
+
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
   int WIDTH = 320;
@@ -169,31 +198,7 @@ int main() {
   CUDA_CONTROL(cudaDeviceSynchronize());
 
   // declare camera
-
-  // one weekend final camera specification
-  // Vec3 lookfrom(13, 2, 3);
-  // Vec3 lookat(0, 0, 0);
-  // Vec3 wup(0, 1, 0);
-  // float vfov = 20.0f;
-  // float aspect_r = float(WIDTH) / float(HEIGHT);
-  // float dist_to_focus = 10.0;
-  //(lookfrom - lookat).length();
-  // float aperture = 0.1;
-  // float t0 = 0.0f, t1 = 1.0f;
-
-  // nextweek empty cornell box specification
-
-  Vec3 lookfrom(478, 278, -600);
-  Vec3 lookat(278, 278, 0);
-  Vec3 wup(0, 1, 0);
-  float vfov = 40.0f;
-  float aspect_r = float(WIDTH) / float(HEIGHT);
-  float dist_to_focus = (lookfrom - lookat).length();
-  float aperture = 0.0;
-  float t0 = 0.0f, t1 = 1.0f;
-
-  Camera cam(lookfrom, lookat, wup, vfov, aspect_r,
-             aperture, dist_to_focus, t0, t1);
+  Camera cam = makeCam(WIDTH, HEIGHT);
 
   render<<<blocks, threads>>>(
       thrust::raw_pointer_cast(fb), WIDTH, HEIGHT,
