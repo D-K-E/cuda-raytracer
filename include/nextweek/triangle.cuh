@@ -12,9 +12,12 @@ class Triangle : public Hittable {
 public:
   Point3 p1, p2, p3;
   Material *mat_ptr;
-  __host__ __device__ bool hit(const Ray &r, float d_min,
-                      float d_max,
-                      HitRecord &rec) const override {
+  __host__ __device__ Triangle(Point3 &c1, Point3 &c2,
+                               Point3 &c3, Material *mptr)
+      : p1(c1), p2(c2), p3(c3), mat_ptr(mptr) {}
+  __host__ __device__ bool
+  hit(const Ray &r, float d_min, float d_max,
+      HitRecord &rec) const override {
     // implementing moller from wikipedia
     // https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
     const float eps = 0.000001f;
