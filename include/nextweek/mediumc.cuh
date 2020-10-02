@@ -12,28 +12,28 @@
 
 class ConstantMedium : public Hittable {
 public:
-  __host__ __device__ ConstantMedium(Hittable *&b, float d,
+  __host__ __device__ ConstantMedium(Hittable *&b, double d,
                                      Texture *a)
       : boundary(b), neg_inv_density(-1 / d),
         phase_function(new Isotropic(a)) {}
 
-  __device__ ConstantMedium(Hittable *&b, float d,
+  __device__ ConstantMedium(Hittable *&b, double d,
                             Texture *a, curandState *s)
       : boundary(b), neg_inv_density(-1 / d),
         phase_function(new Isotropic(a)), rState(s) {}
 
-  __host__ __device__ ConstantMedium(Hittable *&b, float d,
+  __host__ __device__ ConstantMedium(Hittable *&b, double d,
                                      Color c)
       : boundary(b), neg_inv_density(-1 / d),
         phase_function(new Isotropic(c)) {}
 
-  __device__ ConstantMedium(Hittable *b, float d, Color c,
+  __device__ ConstantMedium(Hittable *b, double d, Color c,
                             curandState *s)
       : boundary(b), neg_inv_density(-1 / d),
         phase_function(new Isotropic(c)), rState(s) {}
 
-  __device__ bool hit(const Ray &r, float t_min,
-                      float t_max,
+  __device__ bool hit(const Ray &r, double t_min,
+                      double t_max,
                       HitRecord &rec) const override {
     //
     // Print occasional samples when debugging. To enable,
@@ -67,10 +67,10 @@ public:
     if (rec1.t < 0)
       rec1.t = 0;
 
-    const float ray_length = r.direction().length();
-    const float distance_inside_boundary =
+    const double ray_length = r.direction().length();
+    const double distance_inside_boundary =
         (rec2.t - rec1.t) * ray_length;
-    const float hit_distance =
+    const double hit_distance =
         neg_inv_density * log(curand_uniform(rState));
 
     if (hit_distance > distance_inside_boundary)
@@ -95,7 +95,7 @@ public:
   }
 
   __host__ __device__ bool
-  bounding_box(float t0, float t1,
+  bounding_box(double t0, double t1,
                Aabb &output_box) const override {
     return boundary->bounding_box(t0, t1, output_box);
   }
@@ -103,7 +103,7 @@ public:
 public:
   Hittable *boundary;
   Material *phase_function;
-  float neg_inv_density;
+  double neg_inv_density;
   curandState *rState;
 };
 

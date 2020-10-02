@@ -32,10 +32,10 @@ public:
     delete[] perm_z;
   }
 
-  __host__ __device__ float noise(const Point3 &p) const {
-    float u = p.x() - floor(p.x());
-    float v = p.y() - floor(p.y());
-    float w = p.z() - floor(p.z());
+  __host__ __device__ double noise(const Point3 &p) const {
+    double u = p.x() - floor(p.x());
+    double v = p.y() - floor(p.y());
+    double w = p.z() - floor(p.z());
     int i = (int)(floor(p.x()));
     int j = (int)(floor(p.y()));
     int k = (int)(floor(p.z()));
@@ -51,11 +51,11 @@ public:
     return perlin_interp(c, u, v, w);
   }
 
-  __host__ __device__ float turb(const Point3 &p,
+  __host__ __device__ double turb(const Point3 &p,
                         int depth = 7) const {
-    float accum = 0.0f;
+    double accum = 0.0f;
     Point3 temp_p = p;
-    float weight = 1.0;
+    double weight = 1.0;
 
     for (int i = 0; i < depth; i++) {
       accum += weight * noise(temp_p);
@@ -94,8 +94,8 @@ private:
   }
 
   __host__ __device__ inline static double
-  perlin_interp(Vec3 c[2][2][2], float u, float v,
-                float w) {
+  perlin_interp(Vec3 c[2][2][2], double u, double v,
+                double w) {
     auto uu = u * u * (3 - 2 * u);
     auto vv = v * v * (3 - 2 * v);
     auto ww = w * w * (3 - 2 * w);

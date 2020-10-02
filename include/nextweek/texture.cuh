@@ -12,7 +12,7 @@ class Texture {
 public:
   __host__ __device__ virtual ~Texture() {}
   __host__ __device__ virtual Color
-  value(float u, float v, const Point3 &p) const = 0;
+  value(double u, double v, const Point3 &p) const = 0;
 };
 
 class SolidColor : public Texture {
@@ -21,12 +21,12 @@ public:
   __host__ __device__ SolidColor(Color c)
       : color_value(c) {}
 
-  __host__ __device__ SolidColor(float red, float green,
-                                 float blue)
+  __host__ __device__ SolidColor(double red, double green,
+                                 double blue)
       : color_value(red, green, blue) {}
 
   __host__ __device__ Color
-  value(float u, float v, const Point3 &p) const override {
+  value(double u, double v, const Point3 &p) const override {
     return color_value;
   }
 
@@ -60,9 +60,9 @@ public:
     even = c2;
   }
   __host__ __device__ Color
-  value(float u, float v, const Point3 &p) const override {
+  value(double u, double v, const Point3 &p) const override {
     //
-    float sines = sin(10 * p.x()) * sin(10.0f * p.y()) *
+    double sines = sin(10 * p.x()) * sin(10.0f * p.y()) *
                   sin(10.0f * p.z());
     if (sines < 0) {
       return odd->value(u, v, p);
@@ -75,18 +75,18 @@ public:
 class NoiseTexture : public Texture {
 public:
   __host__ __device__ NoiseTexture() {}
-  __device__ NoiseTexture(float s, curandState *loc)
+  __device__ NoiseTexture(double s, curandState *loc)
       : scale(s), noise(Perlin(loc)) {}
   __host__ __device__ Color
-  value(float u, float v, const Point3 &p) const override {
-    float zscale = scale * p.z();
-    float turbulance = 10.0f * noise.turb(p);
+  value(double u, double v, const Point3 &p) const override {
+    double zscale = scale * p.z();
+    double turbulance = 10.0f * noise.turb(p);
     Color white(1.0f);
     return white * 0.5f * (1.0f + sin(zscale + turbulance));
   }
 
 public:
-  float scale;
+  double scale;
   Perlin noise;
 };
 
@@ -146,7 +146,7 @@ public:
         bytes_per_pixel(bpp) {}
 
   __host__ __device__ Color
-  value(float u, float v, const Point3 &p) const override {
+  value(double u, double v, const Point3 &p) const override {
     if (data == nullptr) {
       return Color(1.0, 0.0, 0.0);
     }
@@ -162,7 +162,7 @@ public:
         yj * bytes_per_line + xi * bytes_per_pixel + index;
     Color c(0.0f);
     for (int i = 0; i < bytes_per_pixel; i++) {
-      c.e[i] = (float)data[pixel + i] / 255;
+      c.e[i] = (double)data[pixel + i] / 255;
     }
     return c;
   }

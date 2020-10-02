@@ -6,41 +6,41 @@
 
 class Vec3 {
 public:
-  float e[3];
+  double e[3];
 
   __host__ __device__ Vec3() {}
-  __host__ __device__ Vec3(float e1, float e2, float e3) {
+  __host__ __device__ Vec3(double e1, double e2, double e3) {
     e[0] = e1;
     e[1] = e2;
     e[2] = e3;
   }
-  __host__ __device__ Vec3(float e1) {
+  __host__ __device__ Vec3(double e1) {
     e[0] = e1;
     e[1] = e1;
     e[2] = e1;
   }
-  __host__ __device__ Vec3(float es[3]) {
+  __host__ __device__ Vec3(double es[3]) {
     e[0] = es[0];
     e[1] = es[1];
     e[2] = e[2];
   }
-  __host__ __device__ inline float x() const {
+  __host__ __device__ inline double x() const {
     return e[0];
   }
-  __host__ __device__ inline float y() const {
+  __host__ __device__ inline double y() const {
     return e[1];
   }
-  __host__ __device__ inline float z() const {
+  __host__ __device__ inline double z() const {
     return e[2];
   }
-  __host__ __device__ inline float r() const { return x(); }
-  __host__ __device__ inline float g() const { return y(); }
-  __host__ __device__ inline float b() const { return z(); }
+  __host__ __device__ inline double r() const { return x(); }
+  __host__ __device__ inline double g() const { return y(); }
+  __host__ __device__ inline double b() const { return z(); }
 
   __host__ __device__ inline Vec3 operator-() const {
     return Vec3(-e[0], -e[1], -e[2]);
   }
-  __host__ __device__ inline float operator[](int i) const {
+  __host__ __device__ inline double operator[](int i) const {
     return e[i];
   }
 
@@ -53,18 +53,18 @@ public:
   __host__ __device__ inline Vec3 &
   operator/=(const Vec3 &v);
   __host__ __device__ inline Vec3 &
-  operator*=(const float t);
+  operator*=(const double t);
   __host__ __device__ inline Vec3 &
-  operator/=(const float t);
+  operator/=(const double t);
   __host__ __device__ inline Vec3 &
-  operator+=(const float t);
+  operator+=(const double t);
   __host__ __device__ inline Vec3 &
-  operator-=(const float t);
+  operator-=(const double t);
 
-  __host__ __device__ inline float squared_length() const {
+  __host__ __device__ inline double squared_length() const {
     return e[0] * e[0] + e[1] * e[1] + e[2] * e[2];
   }
-  __host__ __device__ inline float length() const {
+  __host__ __device__ inline double length() const {
     return sqrt(squared_length());
   }
   __host__ __device__ inline Vec3 to_unit() const;
@@ -99,23 +99,23 @@ __host__ __device__ inline Vec3 operator/(const Vec3 &v1,
               v1.z() / v2.z());
 }
 __host__ __device__ inline Vec3 operator*(const Vec3 &v1,
-                                          float t) {
+                                          double t) {
   return Vec3(v1.x() * t, v1.y() * t, v1.z() * t);
 }
 __host__ __device__ inline Vec3 operator/(const Vec3 &v1,
-                                          float t) {
+                                          double t) {
   return Vec3(v1.x() / t, v1.y() / t, v1.z() / t);
 }
 __host__ __device__ inline Vec3 operator+(const Vec3 &v1,
-                                          float t) {
+                                          double t) {
   return Vec3(v1.x() + t, v1.y() + t, v1.z() + t);
 }
 __host__ __device__ inline Vec3 operator-(const Vec3 &v1,
-                                          float t) {
+                                          double t) {
   return Vec3(v1.x() - t, v1.y() - t, v1.z() - t);
 }
 
-__host__ __device__ inline float dot(const Vec3 &v1,
+__host__ __device__ inline double dot(const Vec3 &v1,
                                      const Vec3 &v2) {
   return v1.x() * v2.x() + v1.y() * v2.y() +
          v1.z() * v2.z();
@@ -157,25 +157,25 @@ operator-=(const Vec3 &v) {
   return *this;
 }
 
-__host__ __device__ inline Vec3 &Vec3::operator+=(float v) {
+__host__ __device__ inline Vec3 &Vec3::operator+=(double v) {
   e[0] += v;
   e[1] += v;
   e[2] += v;
   return *this;
 }
-__host__ __device__ inline Vec3 &Vec3::operator-=(float v) {
+__host__ __device__ inline Vec3 &Vec3::operator-=(double v) {
   e[0] -= v;
   e[1] -= v;
   e[2] -= v;
   return *this;
 }
-__host__ __device__ inline Vec3 &Vec3::operator*=(float v) {
+__host__ __device__ inline Vec3 &Vec3::operator*=(double v) {
   e[0] *= v;
   e[1] *= v;
   e[2] *= v;
   return *this;
 }
-__host__ __device__ inline Vec3 &Vec3::operator/=(float v) {
+__host__ __device__ inline Vec3 &Vec3::operator/=(double v) {
   e[0] /= v;
   e[1] /= v;
   e[2] /= v;
@@ -187,8 +187,8 @@ __host__ __device__ inline Vec3 to_unit(Vec3 v) {
 
 #define RND (curand_uniform(&local_rand_state))
 
-__device__ float random_float(curandState *loc, float min,
-                              float max) {
+__device__ double random_double(curandState *loc, double min,
+                              double max) {
   return min + (max - min) * curand_uniform(loc);
 }
 

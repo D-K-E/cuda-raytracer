@@ -22,10 +22,7 @@ __global__ void rand_init(curandState *randState,
 
 __global__ void render_init(int mx, int my,
                             curandState *randState,
-                            int seed) {
-  if (threadIdx.x == 0 && threadIdx.y == 0) {
-    curand_init(seed, 0, 0, randState);
-  }
+                            float *rand_vals, int seed) {
   int i = threadIdx.x + blockIdx.x * blockDim.x;
   int j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -36,6 +33,9 @@ __global__ void render_init(int mx, int my,
   // same seed, different index
   curand_init(seed + pixel_index, pixel_index, 0,
               &randState[pixel_index]);
+
+  rand_vals[pixel_index] =
+      curand_uniform(&randState[pixel_index]);
 }
 
 void get_device_props() {
@@ -92,7 +92,7 @@ int main() {
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
   int BLOCK_WIDTH = 32;
   int BLOCK_HEIGHT = 18;
-  int SAMPLE_NB = 50;
+  int SAMPLE_NB = 10;
   int BOUNCE_NB = 10;
 
   get_device_props();
@@ -187,12 +187,15 @@ int main() {
   clock_t baslar, biter;
   baslar = clock();
 
+  thrust::device_ptr<float> rand_seed =
+      thrust::device_malloc<float>(frameSize);
+
   dim3 blocks(WIDTH / BLOCK_WIDTH + 1,
               HEIGHT / BLOCK_HEIGHT + 1);
   dim3 threads(BLOCK_WIDTH, BLOCK_HEIGHT);
   render_init<<<blocks, threads>>>(
       WIDTH, HEIGHT, thrust::raw_pointer_cast(randState1),
-      SEED + 7);
+      thrust::raw_pointer_cast(rand_seed), SEED + 7);
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
 
@@ -203,7 +206,8 @@ int main() {
       thrust::raw_pointer_cast(fb), WIDTH, HEIGHT,
       SAMPLE_NB, BOUNCE_NB, cam,
       thrust::raw_pointer_cast(world),
-      thrust::raw_pointer_cast(randState1));
+      thrust::raw_pointer_cast(randState1),
+      thrust::raw_pointer_cast(rand_seed));
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
   biter = clock();

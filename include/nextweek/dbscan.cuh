@@ -10,7 +10,7 @@
 
 __host__ __device__ int neighbour_nb(Hittable **&hs,
                                      int gsize, int index,
-                                     float min_limit) {
+                                     double min_limit) {
   //
   int counter = 0;
   Aabb temp;
@@ -33,7 +33,7 @@ __host__ __device__ int neighbour_nb(Hittable **&hs,
 
 __host__ __device__ int *
 get_neighbours(Hittable **&hs, int gsize, int index,
-               float min_limit, int neighbour_nb) {
+               double min_limit, int neighbour_nb) {
   int *indices = new int[neighbour_nb];
   int counter = 0;
   Aabb temp;
@@ -75,7 +75,7 @@ __host__ __device__ int count_positive(int *queue,
 
 __host__ __device__ void
 grow_set(Hittable **&hs, int *&labels, int gsize, int index,
-         int label, float min_limit, int min_neighbour_nb) {
+         int label, double min_limit, int min_neighbour_nb) {
   int size = gsize;
   int *queue = fill(size, -1);
   int i = 0;
@@ -108,7 +108,7 @@ grow_set(Hittable **&hs, int *&labels, int gsize, int index,
 
 __host__ __device__ void dbscan(Hittable **&hs, int gsize,
                                 int *&labels,
-                                float min_limit,
+                                double min_limit,
                                 int min_neighbour_nb) {
   //
   labels = fill(gsize, 0);

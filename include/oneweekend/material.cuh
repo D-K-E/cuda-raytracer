@@ -6,26 +6,26 @@
 
 struct HitRecord;
 
-__device__ float fresnelCT(float costheta, float ridx) {
+__device__ double fresnelCT(double costheta, double ridx) {
   // cook torrence fresnel equation
-  float etao = 1 + sqrt(ridx);
-  float etau = 1 - sqrt(ridx);
-  float eta = etao / etau;
-  float g = sqrt(pow(eta, 2) + pow(costheta, 2) - 1);
-  float g_c = g - costheta;
-  float gplusc = g + costheta;
-  float gplus_cc = (gplusc * costheta) - 1;
-  float g_cc = (g_c * costheta) + 1;
-  float oneplus_gcc = 1 + pow(gplus_cc / g_cc, 2);
-  float half_plus_minus = 0.5 * pow(g_c / gplusc, 2);
+  double etao = 1 + sqrt(ridx);
+  double etau = 1 - sqrt(ridx);
+  double eta = etao / etau;
+  double g = sqrt(pow(eta, 2) + pow(costheta, 2) - 1);
+  double g_c = g - costheta;
+  double gplusc = g + costheta;
+  double gplus_cc = (gplusc * costheta) - 1;
+  double g_cc = (g_c * costheta) + 1;
+  double oneplus_gcc = 1 + pow(gplus_cc / g_cc, 2);
+  double half_plus_minus = 0.5 * pow(g_c / gplusc, 2);
   return half_plus_minus * oneplus_gcc;
 }
 
 __device__ bool refract(const Vec3 &v, const Vec3 &n,
-                        float ni_over_nt, Vec3 &refracted) {
+                        double ni_over_nt, Vec3 &refracted) {
   Vec3 uv = to_unit(v);
-  float dt = dot(uv, n);
-  float discriminant =
+  double dt = dot(uv, n);
+  double discriminant =
       1.0f - ni_over_nt * ni_over_nt * (1 - dt * dt);
   if (discriminant > 0) {
     refracted =
@@ -66,7 +66,7 @@ public:
 
 class Metal : public Material {
 public:
-  __device__ Metal(const Vec3 &a, float f) : albedo(a) {
+  __device__ Metal(const Vec3 &a, double f) : albedo(a) {
     if (f < 1)
       fuzz = f;
     else
@@ -86,23 +86,23 @@ public:
     return (dot(scattered.direction(), rec.normal) > 0.0f);
   }
   Vec3 albedo;
-  float fuzz;
+  double fuzz;
 };
 
 class Dielectric : public Material {
 public:
-  __device__ Dielectric(float ri) : ref_idx(ri) {}
+  __device__ Dielectric(double ri) : ref_idx(ri) {}
   __device__ bool
   scatter(const Ray &r_in, const HitRecord &rec,
           Vec3 &attenuation, Ray &scattered,
           curandState *local_rand_state) const override {
     Vec3 outward_normal;
     Vec3 reflected = reflect(r_in.direction(), rec.normal);
-    float ni_over_nt;
+    double ni_over_nt;
     attenuation = Vec3(1.0);
     Vec3 refracted;
-    float reflect_prob;
-    float cosine;
+    double reflect_prob;
+    double cosine;
     if (dot(r_in.direction(), rec.normal) > 0.0f) {
       outward_normal = -rec.normal;
       ni_over_nt = ref_idx;
@@ -127,7 +127,7 @@ public:
       scattered = Ray(rec.p, refracted, r_in.time());
     return true;
   }
-  float ref_idx;
+  double ref_idx;
 };
 
 #endif

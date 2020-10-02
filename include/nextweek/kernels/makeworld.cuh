@@ -32,13 +32,13 @@ __device__ void make_side_boxes(Hittable **&ss, int &ocount,
   for (int i = 0; i < side_box_nb; i++) {
     for (int j = 0; j < side_box_nb; j++) {
 
-      float w = 100.0f;
-      float x0 = -1000.0f + i * w;
-      float z0 = -1000.0f + j * w;
-      float y0 = 0.0f;
-      float x1 = x0 + w;
-      float y1 = random_float(randState, 1, 101);
-      float z1 = z0 + w;
+      double w = 100.0f;
+      double x0 = -1000.0f + i * w;
+      double z0 = -1000.0f + j * w;
+      double y0 = 0.0f;
+      double x1 = x0 + w;
+      double y1 = random_double(randState, 1, 101);
+      double z1 = z0 + w;
       Material *ground = i * j % 2 == 0 ? ground1 : ground2;
       Box b(Point3(x0, y0, z0), Point3(x1, y1, z1), ground,
             ss, ocount);
