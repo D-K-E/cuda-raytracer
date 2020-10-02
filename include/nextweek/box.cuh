@@ -6,8 +6,6 @@
 #include <nextweek/utils.cuh>
 #include <nextweek/vec3.cuh>
 
-enum State : int { SOLID, LIQUID, GAS };
-
 class Box : public HittableGroup {
 public:
   __host__ __device__ Box() : HittableGroup() {}

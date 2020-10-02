@@ -279,7 +279,8 @@ struct SceneObj {
   __device__ NoiseTexture to_noise() const {
     return NoiseTexture(scale, rstate);
   }
-  template <typename T> __host__ T to_texture() const {
+  template <typename T = Texture>
+  __host__ T to_texture() const {
     if (ttype == SOLID) {
       return to_solid_color();
     } else if (ttype == CHECKER) {
@@ -288,7 +289,8 @@ struct SceneObj {
       return to_image();
     }
   }
-  template <typename T> __device__ T to_texture() const {
+  template <typename T = Texture>
+  __device__ T to_texture() const {
     if (ttype == SOLID) {
       return to_solid_color();
     } else if (ttype == CHECKER) {
@@ -299,15 +301,15 @@ struct SceneObj {
       return to_noise();
     }
   }
-  template <typename T>
+  template <typename T = Texture>
   __host__ __device__ Lambertian to_lambertian() const {
-    T text = to_texture();
+    T text = to_texture<T>();
     Lambertian lamb(&text);
     return lamb;
   }
-  template <typename T>
+  template <typename T = Texture>
   __host__ __device__ Metal to_metal() const {
-    T text = to_texture();
+    T text = to_texture<T>();
     Metal met(&text, fuzz);
     return met;
   }
@@ -315,18 +317,75 @@ struct SceneObj {
     Dielectric die(fuzz);
     return die;
   }
-  template <typename T>
+  template <typename T = Texture>
   __host__ __device__ DiffuseLight
   to_diffuse_light() const {
-    T text = to_texture();
+    T text = to_texture<T>();
     DiffuseLight met(&text);
     return met;
   }
-  template <typename T>
+  template <typename T = Texture>
   __host__ __device__ Isotropic to_isotropic() const {
-    T text = to_texture();
+    T text = to_texture<T>();
     Isotropic isot(&text);
     return isot;
+  }
+  template <class Mat = Material, class Tex = Texture>
+  __host__ __device__ Mat to_material() const {
+    if (mtype == LAMBERT) {
+      return to_lambertian<Tex>();
+    } else if (mtype == METAL) {
+      return to_metal<Tex>();
+    } else if (mtype == DIELECTRIC) {
+      return to_dielectric();
+    } else if (mtype == DIFFUSE_LIGHT) {
+      return to_diffuse_light<Tex>();
+    } else {
+      return to_isotropic<Tex>();
+    }
+  }
+  template <class Mat = Material, class Tex = Texture>
+  __host__ __device__ Sphere to_sphere() const {
+    Mat m = to_material<Mat, Tex>();
+    Sphere s(Point3(p1x, p1y, p1z), radius, &m);
+    return s;
+  }
+  template <class Mat = Material, class Tex = Texture>
+  __host__ __device__ MovingSphere
+  to_moving_sphere() const {
+    Mat m = to_material<Mat, Tex>();
+    MovingSphere s(Point3(p1x, p1y, p1z),
+                   Point3(p2x, p2y, p2z), p3x, p3y, radius,
+                   &m);
+    return s;
+  }
+  template <class Mat = Material, class Tex = Texture>
+  __host__ __device__ AaRect to_aarect() const {
+    Mat m = to_material<Mat, Tex>();
+    AaRect rect(p1x, p1y, p1z, p2x, p2y, p2z, &m,
+                Vec3(p3x, p3y, p3z));
+    return rect;
+  }
+  template <class Mat = Material, class Tex = Texture>
+  __host__ __device__ Triangle to_triangle() const {
+    Mat m = to_material<Mat, Tex>();
+    Triangle tri(Point3(p1x, p1y, p1z),
+                 Point3(p2x, p2y, p2z),
+                 Point3(p3x, p3y, p3z), &m);
+    return tri;
+  }
+  template <class Obj = Hittable, class Mat = Material,
+            class Tex = Texture>
+  __host__ __device__ Obj to_obj() const {
+    if (htype == TRIANGLE) {
+      return to_triangle<Mat, Tex>();
+    } else if (htype == SPHERE) {
+      return to_sphere<Mat, Tex>();
+    } else if (htype == MOVING_SPHERE) {
+      return to_moving_sphere<Mat, Tex>();
+    } else if (htype == RECTANGLE) {
+      return to_aarect<Mat, Tex>();
+    }
   }
 };
 
@@ -369,31 +428,40 @@ struct SceneObjects {
         ws(nullptr), hs(nullptr), bpps(nullptr),
         tindices(nullptr), scales(nullptr), hlength(0) {}
   __host__ __device__ SceneObjects(int obj_size)
-      : htypes(new int[obj_size]),
-        rads(new double[obj_size]),
-        p1x(new double[obj_size]),
-        p1y(new double[obj_size]),
-        p1z(new double[obj_size]),
-        p2x(new double[obj_size]),
-        p2y(new double[obj_size]),
-        p2z(new double[obj_size]),
-        p3x(new double[obj_size]),
-        p3y(new double[obj_size]),
-        p3z(new double[obj_size]),
-        mtypes(new int[obj_size]),
-        fuzzs(new double[obj_size]),
-        ttypes(new int[obj_size]),
-        tp1x(new double[obj_size]),
-        tp1y(new double[obj_size]),
-        tp1z(new double[obj_size]), tdata(nullptr),
-        ws(new int[obj_size]), hs(new int[obj_size]),
-        bpps(new int[obj_size]),
-        tindices(new int[obj_size]),
-        scales(new double[obj_size]), hlength(obj_size) {}
+      : hlength(obj_size) {
+    init_arrays();
+  }
+
+  __host__ __device__ void init_arrays() {
+    htypes = new int[hlength];
+    rads = new double[hlength];
+    p1x = new double[hlength];
+    p1y = new double[hlength];
+    p1z = new double[hlength];
+    p2x = new double[hlength];
+    p2y = new double[hlength];
+    p2z = new double[hlength];
+    p3x = new double[hlength];
+    p3y = new double[hlength];
+    p3z = new double[hlength];
+    mtypes = new int[hlength];
+    fuzzs = new double[hlength];
+    ttypes = new int[hlength];
+    tp1x = new double[hlength];
+    tp1y = new double[hlength];
+    tp1z = new double[hlength];
+    tdata = nullptr;
+    ws = new int[hlength];
+    hs = new int[hlength];
+    bpps = new int[hlength];
+    tindices = new int[hlength];
+    scales = new double[hlength];
+  }
 
   __host__ __device__ SceneObjects(SceneObj *&objs,
                                    int obj_length)
-      : SceneObjects(obj_length) {
+      : hlength(obj_length) {
+    init_arrays();
     bool data_check = false;
     for (int i = 0; i < hlength; i++) {
       //
@@ -433,6 +501,39 @@ struct SceneObjects {
         data_check = true;
       }
     }
+  }
+
+  __host__ SceneObj get(int obj_index) {
+    int htype = htypes[obj_index];
+    SceneObj sobj(
+        htypes[obj_index], rads[obj_index], p1xs[obj_index],
+        p1ys[obj_index], p1zs[obj_index], p2xs[obj_index],
+        p2ys[obj_index], p2zs[obj_index], p3xs[obj_index],
+        p3ys[obj_index], p3zs[obj_index], mtypes[obj_index],
+        fuzzs[obj_index], ttypes[obj_index],
+        tp1xs[obj_index], tp1ys[obj_index],
+        tp1zs[obj_index], tp2xs[obj_index],
+        tp2ys[obj_index], tp2zs[obj_index],
+        htype == IMAGE ? tdata[obj_index] : nullptr,
+        ws[obj_index], hs[obj_index], tindices[obj_index],
+        scales[obj_index]);
+    return sobj;
+  }
+  __device__ SceneObj get(int obj_index, curandState *loc) {
+    int htype = htypes[obj_index];
+    SceneObj sobj(
+        htypes[obj_index], rads[obj_index], p1xs[obj_index],
+        p1ys[obj_index], p1zs[obj_index], p2xs[obj_index],
+        p2ys[obj_index], p2zs[obj_index], p3xs[obj_index],
+        p3ys[obj_index], p3zs[obj_index], mtypes[obj_index],
+        fuzzs[obj_index], ttypes[obj_index],
+        tp1xs[obj_index], tp1ys[obj_index],
+        tp1zs[obj_index], tp2xs[obj_index],
+        tp2ys[obj_index], tp2zs[obj_index],
+        htype == IMAGE ? tdata[obj_index] : nullptr,
+        ws[obj_index], hs[obj_index], tindices[obj_index],
+        scales[obj_index], loc);
+    return sobj;
   }
 };
 

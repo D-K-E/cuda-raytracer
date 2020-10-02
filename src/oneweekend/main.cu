@@ -32,7 +32,7 @@ __device__ Color ray_color(const Ray &r, Hittables **world,
       }
     } else {
       Vec3 udir = to_unit(current_ray.direction());
-      float t = 0.5f * (udir.y() + 1.0f);
+      double t = 0.5f * (udir.y() + 1.0f);
       Vec3 out = (1.0f - t) * Vec3(1.0f) +
                  t * Vec3(0.5f, 0.7f, 1.0f);
       return current_attenuation * out;
@@ -81,16 +81,16 @@ __global__ void render(Vec3 *fb, int maximum_x,
   curandState localS = randState[pixel_index];
   Vec3 rcolor(0.0f);
   for (int s = 0; s < sample_nb; s++) {
-    float u = float(i + curand_uniform(&localS)) /
-              float(maximum_x);
-    float v = float(j + curand_uniform(&localS)) /
-              float(maximum_y);
+    double u = double(i + curand_uniform(&localS)) /
+              double(maximum_x);
+    double v = double(j + curand_uniform(&localS)) /
+              double(maximum_y);
     Ray r = cam[0]->get_ray(u, v, &localS);
     rcolor += ray_color(r, world, randState, bounceNb);
   }
   // fix the bounce depth
   randState[pixel_index] = localS;
-  rcolor /= float(sample_nb);
+  rcolor /= double(sample_nb);
   rcolor.e[0] = sqrt(rcolor.x());
   rcolor.e[1] = sqrt(rcolor.y());
   rcolor.e[2] = sqrt(rcolor.z());
@@ -109,13 +109,13 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     int halfRow = row / 2;
     for (int a = -halfRow; a < halfRow; a++) {
       for (int b = -halfRow; b < halfRow; b++) {
-        float choose_mat = curand_uniform(randState);
+        double choose_mat = curand_uniform(randState);
         Vec3 center(a + curand_uniform(randState), 0.2,
                     b + curand_uniform(randState));
         if (choose_mat < 0.8f) {
           Point3 center2 =
               center +
-              Vec3(0, random_float(randState, 0.0, 0.5), 0);
+              Vec3(0, random_double(randState, 0.0, 0.5), 0);
           Color albedo = random_double(randState);
           albedo *= random_double(randState);
           Material *lamb1 = new Lambertian(albedo);
@@ -149,11 +149,11 @@ __global__ void make_world(Hittables **world, Hittable **ss,
 
     Vec3 lookfrom(13, 2, 3);
     Vec3 lookat(0, 0, 0);
-    float dist_to_focus = 10.0;
+    double dist_to_focus = 10.0;
     (lookfrom - lookat).length();
-    float aperture = 0.1;
+    double aperture = 0.1;
     cam[0] = new Camera(lookfrom, lookat, Vec3(0, 1, 0),
-                        20.0, float(nx) / float(ny),
+                        20.0, double(nx) / double(ny),
                         aperture, dist_to_focus, 0.0, 1.0);
   }
 }
@@ -169,7 +169,7 @@ __global__ void free_world(Hittables **world, Hittable **ss,
 }
 
 int main() {
-  float aspect_ratio = 16.0f / 9.0f;
+  double aspect_ratio = 16.0f / 9.0f;
   int WIDTH = 320;
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
   int BLOCK_WIDTH = 10;

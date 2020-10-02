@@ -22,7 +22,7 @@ __global__ void rand_init(curandState *randState,
 
 __global__ void render_init(int mx, int my,
                             curandState *randState,
-                            float *rand_vals, int seed) {
+                            double *rand_vals, int seed) {
   int i = threadIdx.x + blockIdx.x * blockDim.x;
   int j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -63,23 +63,23 @@ Camera makeCam(int WIDTH, int HEIGHT) {
   // Vec3 lookfrom(13, 2, 3);
   // Vec3 lookat(0, 0, 0);
   // Vec3 wup(0, 1, 0);
-  // float vfov = 20.0f;
-  // float aspect_r = float(WIDTH) / float(HEIGHT);
-  // float dist_to_focus = 10.0;
+  // double vfov = 20.0f;
+  // double aspect_r = double(WIDTH) / double(HEIGHT);
+  // double dist_to_focus = 10.0;
   //(lookfrom - lookat).length();
-  // float aperture = 0.1;
-  // float t0 = 0.0f, t1 = 1.0f;
+  // double aperture = 0.1;
+  // double t0 = 0.0f, t1 = 1.0f;
 
   // nextweek empty cornell box specification
 
   Vec3 lookfrom(478, 278, -600);
   Vec3 lookat(278, 278, 0);
   Vec3 wup(0, 1, 0);
-  float vfov = 40.0f;
-  float aspect_r = float(WIDTH) / float(HEIGHT);
-  float dist_to_focus = (lookfrom - lookat).length();
-  float aperture = 0.0;
-  float t0 = 0.0f, t1 = 1.0f;
+  double vfov = 40.0f;
+  double aspect_r = double(WIDTH) / double(HEIGHT);
+  double dist_to_focus = (lookfrom - lookat).length();
+  double aperture = 0.0;
+  double t0 = 0.0f, t1 = 1.0f;
 
   Camera cam(lookfrom, lookat, wup, vfov, aspect_r,
              aperture, dist_to_focus, t0, t1);
@@ -87,7 +87,7 @@ Camera makeCam(int WIDTH, int HEIGHT) {
 }
 
 int main() {
-  float aspect_ratio = 16.0f / 9.0f;
+  double aspect_ratio = 16.0f / 9.0f;
   int WIDTH = 320;
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
   int BLOCK_WIDTH = 32;
@@ -187,8 +187,8 @@ int main() {
   clock_t baslar, biter;
   baslar = clock();
 
-  thrust::device_ptr<float> rand_seed =
-      thrust::device_malloc<float>(frameSize);
+  thrust::device_ptr<double> rand_seed =
+      thrust::device_malloc<double>(frameSize);
 
   dim3 blocks(WIDTH / BLOCK_WIDTH + 1,
               HEIGHT / BLOCK_HEIGHT + 1);
