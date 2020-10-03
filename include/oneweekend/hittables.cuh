@@ -22,11 +22,11 @@ class Hittables : public Hittable {
             delete list;
         }
 
-        __device__ bool hit(const Ray &r, double d_min, double d_max,
+        __device__ bool hit(const Ray &r, float d_min, float d_max,
                 HitRecord &rec) const override {
             HitRecord temp;
             bool hit_anything = false;
-            double closest_far = d_max;
+            float closest_far = d_max;
             for (int i = 0; i < list_size; i++) {
                 Hittable* h = list[i];
                 bool isHit = h->hit(r, d_min, closest_far, temp);

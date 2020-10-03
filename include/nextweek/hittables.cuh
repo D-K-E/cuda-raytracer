@@ -49,8 +49,8 @@ public:
     @param rec struct that would hold all the necessary
     information for evaluating a bsdf.
    */
-  __device__ bool hit(const Ray &r, double d_min,
-                      double d_max,
+  __device__ bool hit(const Ray &r, float d_min,
+                      float d_max,
                       HitRecord &rec) const override {
     return hit_to_hittables(list, start_index, end_index, r,
                             d_min, d_max, rec);
@@ -65,7 +65,7 @@ public:
    @param t1 time1
    */
   __host__ __device__ bool
-  bounding_box(double t0, double t1,
+  bounding_box(float t0, float t1,
                Aabb &output_box) const override {
     return bounding_box_to_hittables(
         list, start_index, end_index, t0, t1, output_box);

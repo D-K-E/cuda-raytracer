@@ -6,7 +6,7 @@
 class Material;
 
 struct HitRecord {
-  double t;
+  float t;
   Point3 p;
   Vec3 normal;
   Material *mat_ptr;
@@ -17,8 +17,8 @@ public:
   Material *mat_ptr;
 
 public:
-  __device__ virtual bool hit(const Ray &r, double d_min,
-                              double d_max,
+  __device__ virtual bool hit(const Ray &r, float d_min,
+                              float d_max,
                               HitRecord &rec) const = 0;
 };
 

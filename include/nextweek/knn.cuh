@@ -14,15 +14,15 @@ public:
   Hittable **groups;
   const int group_size;
   curandState *rState;
-  const double err_margin;
+  const float err_margin;
   const int mxX, mxY, mxZ;
   static const int max_iter_size = 5000;
 
 public:
   __device__ KNN() : k(0) {}
   __device__ KNN(unsigned int knb, Hittable **&gs,
-                 double err, curandState *randState,
-                 double maxX, double maxY, double maxZ,
+                 float err, curandState *randState,
+                 float maxX, float maxY, float maxZ,
                  int gsize)
       : k(knb), groups(gs), err_margin(err),
         rState(randState), mxX(maxX), mxY(maxY), mxZ(maxZ),
@@ -44,10 +44,10 @@ public:
     }
   }
 
-  __device__ double distance_to_point(Point3 p1, Point3 p2) {
+  __device__ float distance_to_point(Point3 p1, Point3 p2) {
     return distance(p1, p2);
   }
-  __device__ double hittable_to_center_distance(int index,
+  __device__ float hittable_to_center_distance(int index,
                                                Point3 c) {
     Point3 hcenter = bbox_center(index);
     return distance_to_point(hcenter, c);

@@ -45,7 +45,7 @@ public:
     }
   }
   __host__ __device__ void rotate_y(Hittable **&ss,
-                                    double angle) {
+                                    float angle) {
     for (int i = start_index; i < end_index; i++) {
       list[i] = new RotateY(list[i], angle);
       ss[i] = list[i];

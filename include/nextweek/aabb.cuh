@@ -36,7 +36,7 @@ public:
 
   __host__ __device__ Point3 min() const { return _min; }
   __host__ __device__ Point3 max() const { return _max; }
-  __host__ __device__ double
+  __host__ __device__ float
   compute_box_volume(const Point3 &a,
                      const Point3 &b) const {
     // from
@@ -50,13 +50,13 @@ public:
     return (maxv.x() - minv.x()) * (maxv.y() - minv.y()) *
            (maxv.z() - minv.z());
   }
-  __host__ __device__ bool hit(const Ray &r, double tmin,
-                               double tmax) const {
+  __host__ __device__ bool hit(const Ray &r, float tmin,
+                               float tmax) const {
     for (int a = 0; a < 3; a++) {
-      double t0 = dfmin(
+      float t0 = dfmin(
           (_min[a] - r.origin()[a]) / r.direction()[a],
           (_max[a] - r.origin()[a]) / r.direction()[a]);
-      double t1 = dfmax(
+      float t1 = dfmax(
           (_min[a] - r.origin()[a]) / r.direction()[a],
           (_max[a] - r.origin()[a]) / r.direction()[a]);
       tmin = dfmax(t0, tmin);
@@ -71,7 +71,7 @@ public:
 public:
   Point3 _min;
   Point3 _max;
-  double volume;
+  float volume;
   Point3 cent; // center
 };
 

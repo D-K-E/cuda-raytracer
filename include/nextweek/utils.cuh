@@ -4,21 +4,21 @@
 // some utility functions
 #include <nextweek/external.hpp>
 
-const double PI = 3.141592653589f;
+const float PI = 3.141592653589f;
 
-__host__ __device__ double degree_to_radian(double d) {
+__host__ __device__ float degree_to_radian(float d) {
   return d * PI / 180.0f;
 }
 
-__host__ __device__ double dfmin(double f1, double f2) {
+__host__ __device__ float dfmin(float f1, float f2) {
   return f1 < f2 ? f1 : f2;
 }
-__host__ __device__ double dfmax(double f1, double f2) {
+__host__ __device__ float dfmax(float f1, float f2) {
   return f1 > f2 ? f1 : f2;
 }
 
-__host__ __device__ double clamp(double v, double mn,
-                                double mx) {
+__host__ __device__ float clamp(float v, float mn,
+                                float mx) {
   if (v < mn)
     return mn;
   if (v > mx)
@@ -38,16 +38,16 @@ __host__ __device__ unsigned int hash(unsigned int a) {
   return a;
 }
 
-__host__ __device__ double randf(unsigned int seed) {
+__host__ __device__ float randf(unsigned int seed) {
   thrust::random::default_random_engine rng(seed);
-  thrust::random::normal_distribution<double> dist(0.0f,
+  thrust::random::normal_distribution<float> dist(0.0f,
                                                   1.0f);
   return dist(rng);
 }
-__host__ __device__ double randf(unsigned int seed, int mn,
+__host__ __device__ float randf(unsigned int seed, int mn,
                                 int mx) {
   thrust::random::default_random_engine rng(seed);
-  thrust::random::normal_distribution<double> dist(mn, mx);
+  thrust::random::normal_distribution<float> dist(mn, mx);
   return dist(rng);
 }
 __host__ __device__ int randint(unsigned int seed) {
@@ -155,8 +155,8 @@ expandBits(unsigned int v) {
 
 // Calculates a 30-bit Morton code for the
 // given 3D point located within the unit cube [0,1].
-__host__ __device__ unsigned int morton3D(double x, double y,
-                                          double z) {
+__host__ __device__ unsigned int morton3D(float x, float y,
+                                          float z) {
   x = dfmin(dfmax(x * 1024.0f, 0.0f), 1023.0f);
   y = dfmin(dfmax(y * 1024.0f, 0.0f), 1023.0f);
   z = dfmin(dfmax(z * 1024.0f, 0.0f), 1023.0f);

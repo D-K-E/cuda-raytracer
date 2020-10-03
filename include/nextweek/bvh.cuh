@@ -44,10 +44,10 @@ __host__ __device__ bool box_z_compare(const Hittable *a,
 }
 
 // adapted From P. Shirley Realistic Ray Tracing
-int q_split(Hittable **&hs, int size, double pivot_val,
+int q_split(Hittable **&hs, int size, float pivot_val,
             int axis) {
   Aabb bbox;
-  double centroid;
+  float centroid;
   int ret_val = 0;
   for (int i = 0; i < size; i++) {
     bbox = hs[i]->bounding_box(0.0f, 0.0f);
@@ -87,7 +87,7 @@ public:
   Hittable *left;
   Hittable *right;
   Aabb box;
-  double time0, time1;
+  float time0, time1;
 
 public:
   __device__ BvhNode();
@@ -109,7 +109,7 @@ public:
       : left(p1), right(p2), box(b) {}
 
   __device__ BvhNode(Hittable **list, int start, int end,
-                     double time0, double time1) {
+                     float time0, float time1) {
     if (end - start == 1) {
       left = right = list[0];
     } else if (end - start == 2) {
@@ -119,7 +119,7 @@ public:
     }
   }
 
-  __device__ bool hit(const Ray &r, double tmin, double tmax,
+  __device__ bool hit(const Ray &r, float tmin, float tmax,
                       HitRecord &rec) const override {
     if (!box.hit(r, t_min, t_max))
       return false;
@@ -136,9 +136,9 @@ public:
     while (!sorted) {
       sorted = true;
       for (int i = 1; i < list_size - 1; i += 2) {
-        double d1 =
+        float d1 =
             distance_between_boxes(hlist[i - 1], hlist[i]);
-        double d2 =
+        float d2 =
             distance_between_boxes(hlist[i + 1], hlist[i]);
         if (d2 < d1) {
           swap(hlist, i - 1, i + 1);
@@ -146,9 +146,9 @@ public:
         }
       }
       for (int i = 2; i < list_size - 1; i += 2) {
-        double d1 =
+        float d1 =
             distance_between_boxes(hlist[i - 1], hlist[i]);
-        double d2 =
+        float d2 =
             distance_between_boxes(hlist[i + 1], hlist[i]);
         if (d2 < d1) {
           swap(hlist, i - 1, i + 1);
@@ -158,9 +158,9 @@ public:
     }
   }
 
-  __host__ __device__ double
+  __host__ __device__ float
   distance_between_boxes(Hittable *h1, Hittable *h2) {
-    double h1_center;
+    float h1_center;
     Aabb b1;
     if (!h1->bounding_box(time0, time1, b1)) {
       h1_center = h1->center;
@@ -176,7 +176,7 @@ public:
     return distance(h1_center, h2_center);
   }
   __device__ bool
-  bounding_box(double t0, double t1,
+  bounding_box(float t0, float t1,
                Aabb &output_box) const override {
 
     output_box = box;

@@ -14,29 +14,29 @@ struct AxisInfo {
   int notAligned;
 };
 
-double get_pdf_surface(Vec3 dir, Vec3 normal, double dist,
-                      double area) {
+float get_pdf_surface(Vec3 dir, Vec3 normal, float dist,
+                      float area) {
   //
-  double dist_squared = dist * dist / dir.squared_length();
-  double cosine = fabs(dot(dir, normal) / dir.length());
+  float dist_squared = dist * dist / dir.squared_length();
+  float cosine = fabs(dot(dir, normal) / dir.length());
   return dist_squared / (cosine * area);
 }
 
 class AaRect : public Hittable {
 protected:
   Vec3 axis_normal;
-  double a0, a1, // aligned1
+  float a0, a1, // aligned1
       b0, b1;   // aligned2
   AxisInfo ax;
 
 public:
-  double k;
+  float k;
   Material *mat_ptr;
 
 public:
   __host__ __device__ AaRect() {}
-  __host__ __device__ AaRect(double a_0, double a_1,
-                             double b_0, double b_1, double _k,
+  __host__ __device__ AaRect(float a_0, float a_1,
+                             float b_0, float b_1, float _k,
                              Material *mat, Vec3 anormal)
       : a0(a_0), a1(a_1), b0(b_0), b1(b_1), k(_k),
         mat_ptr(mat), axis_normal(anormal) {
@@ -54,7 +54,7 @@ public:
       ax.notAligned = 1;
     }
   }
-  __device__ bool hit(const Ray &r, double t0, double t1,
+  __device__ bool hit(const Ray &r, float t0, float t1,
                       HitRecord &rec) const override {
     /*
        point of intersection satisfies
@@ -65,13 +65,13 @@ public:
        limits of
        rectangle
      */
-    double t = (k - r.origin()[ax.notAligned]) /
+    float t = (k - r.origin()[ax.notAligned]) /
               r.direction()[ax.notAligned];
     if (t < t0 || t > t1)
       return false;
-    double a = r.origin()[ax.aligned1] +
+    float a = r.origin()[ax.aligned1] +
               t * r.direction()[ax.aligned1];
-    double b = r.origin()[ax.aligned2] +
+    float b = r.origin()[ax.aligned2] +
               t * r.direction()[ax.aligned2];
     bool c1 = a0 < a and a < a1;
     bool c2 = b0 < b and b < b1;
@@ -88,7 +88,7 @@ public:
     return true;
   }
   __host__ __device__ bool
-  bounding_box(double t0, double t1,
+  bounding_box(float t0, float t1,
                Aabb &output_box) const override {
     // The bounding box must have non-zero width in each
     // dimension, so pad the Z
@@ -116,34 +116,34 @@ public:
 
 class XYRect : public AaRect {
 public:
-  double x0, x1, y0, y1;
+  float x0, x1, y0, y1;
 
 public:
   __host__ __device__ XYRect() {}
-  __host__ __device__ XYRect(double _x0, double _x1,
-                             double _y0, double _y1, double _k,
+  __host__ __device__ XYRect(float _x0, float _x1,
+                             float _y0, float _y1, float _k,
                              Material *mat)
       : AaRect(_x0, _x1, _y0, _y1, _k, mat, Vec3(0, 0, 1)),
         x0(_x0), x1(_x1), y0(_y0), y1(_y1) {}
 };
 class XZRect : public AaRect {
 public:
-  double x0, x1, z0, z1;
+  float x0, x1, z0, z1;
 
 public:
   __host__ __device__ XZRect() {}
-  __host__ __device__ XZRect(double _x0, double _x1,
-                             double _z0, double _z1, double _k,
+  __host__ __device__ XZRect(float _x0, float _x1,
+                             float _z0, float _z1, float _k,
                              Material *mat)
       : AaRect(_x0, _x1, _z0, _z1, _k, mat, Vec3(0, 1, 0)),
         x0(_x0), x1(_x1), z0(_z0), z1(_z1) {}
-  __device__ double pdf_value(const Point3 &origin,
+  __device__ float pdf_value(const Point3 &origin,
                              const Vec3 &dir) const {
     HitRecord rec;
     if (!hit(Ray(origin, dir), 0.001, FLT_MAX, rec))
       return 0;
 
-    double area = (x1 - x0) * (z1 - z0);
+    float area = (x1 - x0) * (z1 - z0);
     // auto distance_squared = rec.dist * rec.dist *
     // length_squared(dir);
     // auto cosine = fabs(dot(dir, rec.normal) /
@@ -156,19 +156,19 @@ public:
   __device__ Vec3 random(const Point3 &origin,
                          curandState *loc) const {
     Point3 random_point =
-        Point3(random_double(loc, x0, x1), k,
-               random_double(loc, z0, z1));
+        Point3(random_float(loc, x0, x1), k,
+               random_float(loc, z0, z1));
     return random_point - origin;
   }
 };
 class YZRect : public AaRect {
 public:
-  double y0, y1, z0, z1;
+  float y0, y1, z0, z1;
 
 public:
   __host__ __device__ YZRect() {}
-  __host__ __device__ YZRect(double _y0, double _y1,
-                             double _z0, double _z1, double _k,
+  __host__ __device__ YZRect(float _y0, float _y1,
+                             float _z0, float _z1, float _k,
                              Material *mat)
       : AaRect(_y0, _y1, _z0, _z1, _k, mat, Vec3(1, 0, 0)),
         y0(_y0), y1(_y1), z0(_z0), z1(_z1) {}

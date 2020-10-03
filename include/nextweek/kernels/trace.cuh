@@ -14,7 +14,6 @@
   @param Hittables** world pointer to list of hittables
  */
 __device__ Color ray_color(const Ray &r, Hittables **world,
-                           double rand_val,
                            curandState *local_rand_state,
                            int bounceNb) {
   Ray current_ray = r;
@@ -51,8 +50,7 @@ __global__ void render(Vec3 *fb, int maximum_x,
                        int maximum_y, int sample_nb,
                        int bounceNb, Camera dcam,
                        Hittables **world,
-                       curandState *randState,
-                       double *rand_vals) {
+                       curandState *randState) {
   int i = threadIdx.x + blockIdx.x * blockDim.x;
   int j = threadIdx.y + blockIdx.y * blockDim.y;
 
@@ -64,23 +62,16 @@ __global__ void render(Vec3 *fb, int maximum_x,
   Vec3 rcolor(0.0f);
   Camera cam = dcam;
   for (int s = 0; s < sample_nb; s++) {
-    double u = double(i +
-                    (rand_vals[pixel_index] +
-                     curand_normal(&localS)) /
-                        2) /
-              double(maximum_x);
-    double v = double(j +
-                    (rand_vals[pixel_index] +
-                     curand_normal(&localS)) /
-                        2) /
-              double(maximum_y);
+    float u = float(i + curand_normal(&localS) / 2) /
+              float(maximum_x);
+    float v = float(j + curand_normal(&localS) / 2) /
+              float(maximum_y);
     Ray r = cam.get_ray(u, v, &localS);
-    rcolor += ray_color(r, world, rand_vals[pixel_index],
-                        randState, bounceNb);
+    rcolor += ray_color(r, world, randState, bounceNb);
   }
   // fix the bounce depth
   randState[pixel_index] = localS;
-  rcolor /= double(sample_nb);
+  rcolor /= float(sample_nb);
   rcolor.e[0] = sqrt(rcolor.x());
   rcolor.e[1] = sqrt(rcolor.y());
   rcolor.e[2] = sqrt(rcolor.z());

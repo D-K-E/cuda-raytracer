@@ -26,11 +26,11 @@ class Material;
  of the normal
  */
 struct HitRecord {
-  double t;
+  float t;
   Point3 p;
   Vec3 normal;
   Material *mat_ptr;
-  double u, v;
+  float u, v;
   bool front_face;
 
   /**
@@ -81,8 +81,8 @@ public:
     @param rec the record object that would hold the
     parameters required by the scattering function later on.
    */
-  __device__ virtual bool hit(const Ray &r, double d_min,
-                              double d_max,
+  __device__ virtual bool hit(const Ray &r, float d_min,
+                              float d_max,
                               HitRecord &rec) const = 0;
 
   /**
@@ -97,17 +97,17 @@ public:
     @param t1 time1
    */
   __host__ __device__ virtual bool
-  bounding_box(double t0, double t1,
+  bounding_box(float t0, float t1,
                Aabb &output_box) const = 0;
 };
 __device__ bool hit_to_hittables(Hittable **hs, int si,
                                  int ei, const Ray &r,
-                                 double d_min, double d_max,
+                                 float d_min, float d_max,
                                  HitRecord &rec) {
   //
   HitRecord temp;
   bool hit_anything = false;
-  double closest_far = d_max;
+  float closest_far = d_max;
   for (int i = si; i < ei; i++) {
     const Hittable *h = hs[i];
     bool isHit = h->hit(r, d_min, closest_far, temp);
@@ -122,7 +122,7 @@ __device__ bool hit_to_hittables(Hittable **hs, int si,
 
 __host__ __device__ bool
 bounding_box_to_hittables(Hittable **hs, int si, int ei,
-                          double t0, double t1,
+                          float t0, float t1,
                           Aabb &output_box) {
   if (ei == 0) {
     return false;
@@ -150,8 +150,8 @@ public:
                                 const Vec3 &displacement)
       : ptr(p), offset(displacement) {}
 
-  __device__ bool hit(const Ray &r, double t_min,
-                      double t_max,
+  __device__ bool hit(const Ray &r, float t_min,
+                      float t_max,
                       HitRecord &rec) const override {
     Ray moved_r(r.origin() - offset, r.direction(),
                 r.time());
@@ -165,7 +165,7 @@ public:
   }
 
   __host__ __device__ bool
-  bounding_box(double t0, double t1,
+  bounding_box(float t0, float t1,
                Aabb &output_box) const override {
     if (!ptr->bounding_box(t0, t1, output_box))
       return false;
@@ -182,9 +182,9 @@ public:
 };
 class RotateY : public Hittable {
 public:
-  __host__ __device__ RotateY(Hittable *p, double angle)
+  __host__ __device__ RotateY(Hittable *p, float angle)
       : ptr(p) {
-    double radians = degree_to_radian(angle);
+    float radians = degree_to_radian(angle);
     sin_theta = sin(radians);
     cos_theta = cos(radians);
     hasbox = ptr->bounding_box(0, 1, bbox);
@@ -195,15 +195,15 @@ public:
     for (int i = 0; i < 2; i++) {
       for (int j = 0; j < 2; j++) {
         for (int k = 0; k < 2; k++) {
-          double x =
+          float x =
               i * bbox.max().x() + (1 - i) * bbox.min().x();
-          double y =
+          float y =
               j * bbox.max().y() + (1 - j) * bbox.min().y();
-          double z =
+          float z =
               k * bbox.max().z() + (1 - k) * bbox.min().z();
 
-          double newx = cos_theta * x + sin_theta * z;
-          double newz = -sin_theta * x + cos_theta * z;
+          float newx = cos_theta * x + sin_theta * z;
+          float newz = -sin_theta * x + cos_theta * z;
 
           Vec3 tester(newx, y, newz);
 
@@ -215,24 +215,24 @@ public:
     bbox = Aabb(min, max);
   }
 
-  __device__ bool hit(const Ray &r, double t_min,
-                      double t_max,
+  __device__ bool hit(const Ray &r, float t_min,
+                      float t_max,
                       HitRecord &rec) const override {
     Point3 origin = r.origin();
     Vec3 direction = r.direction();
 
-    double x = (cos_theta * r.origin().x()) -
+    float x = (cos_theta * r.origin().x()) -
               (sin_theta * r.origin().z());
 
-    double z = (sin_theta * r.origin().x()) +
+    float z = (sin_theta * r.origin().x()) +
               (cos_theta * r.origin().z());
     origin[0] = x;
     origin[2] = z;
 
-    double dx = cos_theta * r.direction().x() -
+    float dx = cos_theta * r.direction().x() -
                sin_theta * r.direction().z();
 
-    double dz = sin_theta * r.direction().x() +
+    float dz = sin_theta * r.direction().x() +
                cos_theta * r.direction().z();
 
     direction[0] = dx;
@@ -261,7 +261,7 @@ public:
   }
 
   __host__ __device__ bool
-  bounding_box(double t0, double t1,
+  bounding_box(float t0, float t1,
                Aabb &output_box) const override {
     output_box = bbox;
     return hasbox;
@@ -269,8 +269,8 @@ public:
 
 public:
   Hittable *ptr;
-  double sin_theta;
-  double cos_theta;
+  float sin_theta;
+  float cos_theta;
   bool hasbox;
   Aabb bbox;
 };

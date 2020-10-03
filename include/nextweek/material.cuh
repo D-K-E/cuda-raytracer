@@ -8,29 +8,29 @@
 
 struct HitRecord;
 
-__host__ __device__ double fresnelCT(double costheta,
-                                    double ridx) {
+__host__ __device__ float fresnelCT(float costheta,
+                                    float ridx) {
   // cook torrence fresnel equation
-  double etao = 1 + sqrt(ridx);
-  double etau = 1 - sqrt(ridx);
-  double eta = etao / etau;
-  double g = sqrt(pow(eta, 2) + pow(costheta, 2) - 1);
-  double g_c = g - costheta;
-  double gplusc = g + costheta;
-  double gplus_cc = (gplusc * costheta) - 1;
-  double g_cc = (g_c * costheta) + 1;
-  double oneplus_gcc = 1 + pow(gplus_cc / g_cc, 2);
-  double half_plus_minus = 0.5 * pow(g_c / gplusc, 2);
+  float etao = 1 + sqrt(ridx);
+  float etau = 1 - sqrt(ridx);
+  float eta = etao / etau;
+  float g = sqrt(pow(eta, 2) + pow(costheta, 2) - 1);
+  float g_c = g - costheta;
+  float gplusc = g + costheta;
+  float gplus_cc = (gplusc * costheta) - 1;
+  float g_cc = (g_c * costheta) + 1;
+  float oneplus_gcc = 1 + pow(gplus_cc / g_cc, 2);
+  float half_plus_minus = 0.5 * pow(g_c / gplusc, 2);
   return half_plus_minus * oneplus_gcc;
 }
 
 __host__ __device__ bool refract(const Vec3 &v,
                                  const Vec3 &n,
-                                 double ni_over_nt,
+                                 float ni_over_nt,
                                  Vec3 &refracted) {
   Vec3 uv = to_unit(v);
-  double dt = dot(uv, n);
-  double discriminant =
+  float dt = dot(uv, n);
+  float discriminant =
       1.0f - ni_over_nt * ni_over_nt * (1 - dt * dt);
   if (discriminant > 0) {
     refracted =
@@ -54,7 +54,7 @@ public:
           curandState *local_rand_state) const = 0;
 
   __host__ __device__ virtual Color
-  emitted(double u, double v, const Point3 &p) const {
+  emitted(float u, float v, const Point3 &p) const {
     //
     return Color(0.0f);
   }
@@ -62,6 +62,7 @@ public:
 
 class Lambertian : public Material {
 public:
+  __host__ __device__ Lambertian() {}
   __host__ __device__ Lambertian(const Vec3 &a) {
     albedo = new SolidColor(a);
   }
@@ -84,7 +85,8 @@ public:
 
 class Metal : public Material {
 public:
-  __host__ __device__ Metal(const Color &a, double f) {
+  __host__ __device__ Metal() {}
+  __host__ __device__ Metal(const Color &a, float f) {
     if (f < 1)
       fuzz = f;
     else
@@ -92,7 +94,7 @@ public:
     //
     albedo = new SolidColor(a);
   }
-  __host__ __device__ Metal(Texture *txt, double f)
+  __host__ __device__ Metal(Texture *txt, float f)
       : albedo(txt) {
     if (f < 1)
       fuzz = f;
@@ -116,23 +118,24 @@ public:
     return (dot(scattered.direction(), rec.normal) > 0.0f);
   }
   Texture *albedo;
-  double fuzz;
+  float fuzz;
 };
 
 class Dielectric : public Material {
 public:
-  __host__ __device__ Dielectric(double ri) : ref_idx(ri) {}
+  __host__ __device__ Dielectric() {}
+  __host__ __device__ Dielectric(float ri) : ref_idx(ri) {}
   __device__ bool
   scatter(const Ray &r_in, const HitRecord &rec,
           Vec3 &attenuation, Ray &scattered,
           curandState *local_rand_state) const override {
     Vec3 outward_normal;
     Vec3 reflected = reflect(r_in.direction(), rec.normal);
-    double ni_over_nt;
+    float ni_over_nt;
     attenuation = Vec3(1.0);
     Vec3 refracted;
-    double reflect_prob;
-    double cosine;
+    float reflect_prob;
+    float cosine;
     if (dot(r_in.direction(), rec.normal) > 0.0f) {
       outward_normal = -rec.normal;
       ni_over_nt = ref_idx;
@@ -158,7 +161,7 @@ public:
       scattered = Ray(rec.p, refracted, r_in.time());
     return true;
   }
-  double ref_idx;
+  float ref_idx;
 };
 
 class DiffuseLight : public Material {
@@ -166,6 +169,7 @@ public:
   Texture *emit;
 
 public:
+  __host__ __device__ DiffuseLight() {}
   __host__ __device__ DiffuseLight(Texture *t) : emit(t) {}
   __host__ __device__ DiffuseLight(Color c)
       : emit(new SolidColor(c)) {}
@@ -178,13 +182,14 @@ public:
     return false;
   }
   __host__ __device__ Color emitted(
-      double u, double v, const Point3 &p) const override {
+      float u, float v, const Point3 &p) const override {
     return emit->value(u, v, p);
   }
 };
 
 class Isotropic : public Material {
 public:
+  __host__ __device__ Isotropic() {}
   __host__ __device__ Isotropic(Color c)
       : albedo(new SolidColor(c)) {}
   __host__ __device__ Isotropic(Texture *a) : albedo(a) {}

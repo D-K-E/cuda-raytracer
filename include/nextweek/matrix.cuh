@@ -6,9 +6,9 @@
 #include <nextweek/vec3.cuh>
 
 // 3x3 matrix determinant — helper function
-inline double det3(double a, double b, double c, double d,
-                  double e, double f, double g, double h,
-                  double i) {
+inline float det3(float a, float b, float c, float d,
+                  float e, float f, float g, float h,
+                  float i) {
   return a * e * i + d * h * c + g * b * f - g * e * c -
          d * b * i - a * h * f;
 }
@@ -28,7 +28,7 @@ public:
     }
   }
   __host__ __device__ void invert() {
-    double det = determinant();
+    float det = determinant();
     Matrix inverse;
     inverse.x[0][0] =
         det3(x[1][1], x[1][2], x[1][3], x[2][1], x[2][2],
@@ -114,7 +114,7 @@ public:
   __host__ __device__ void transpose() {
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
-        double temp = x[i][j];
+        float temp = x[i][j];
         x[i][j] = x[j][i];
         x[j][i] = temp;
       }
@@ -153,7 +153,7 @@ public:
     Matrix ret = *this;
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
-        double sum = 0;
+        float sum = 0;
         for (int k = 0; k < 4; k++) {
           sum += ret.x[i][k] * right_op.x[k][j];
         }
@@ -162,7 +162,7 @@ public:
     }
     return ret;
   }
-  __host__ __device__ Matrix &operator*=(double right_op) {
+  __host__ __device__ Matrix &operator*=(float right_op) {
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
         x[i][j] *= right_op;
@@ -193,7 +193,7 @@ public:
     Matrix ret;
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
-        double sum = 0.0;
+        float sum = 0.0;
         for (int k = 0; k < 4; k++) {
           sum += left_op.x[i][k] * right_op.x[k][j];
         }
@@ -205,7 +205,7 @@ public:
   __host__ __device__ friend Vec3
   operator*(const Matrix &left_op, const Vec3 &right_op) {
     Vec3 ret;
-    double temp;
+    float temp;
     ret[0] = right_op[0] * left_op.x[0][0] +
              right_op[1] * Ieft_op.x[0][1] +
              right_op[2] * left_op.x[0][2] +
@@ -225,7 +225,7 @@ public:
     return ret;
   }
   __host__ __device__ friend Matrix
-  operator*(const Matrix &left_op, double right_op) {
+  operator*(const Matrix &left_op, float right_op) {
     Matrix ret;
     for (int i = 0; i < 4; i++) {
       for (int j = 0; j < 4; j++) {
@@ -286,7 +286,7 @@ public:
     return ret;
   }
   __host__ __device__ friend Matrix
-  translate(double _x, double _y, double _z) {
+  translate(float _x, float _y, float _z) {
     Matrix ret = identityMatrix();
     ret.x[0][3] = _x;
     ret.x[1][3] = _y;
@@ -294,7 +294,7 @@ public:
     return ret;
   }
   __host__ __device__ friend Matrix
-  scale(double _x, double _y, double _z) {
+  scale(float _x, float _y, float _z) {
     Matrix ret = zeroMatrix();
     ret.x[0][0] = _x;
     ret.x[1][1] = _y;
@@ -303,16 +303,16 @@ public:
     return ret;
   }
   __host__ __device__ friend Matrix rotate(const Vec3 &axis,
-                                           double angle) {
+                                           float angle) {
     //
     Vec3 _axis = to_unit(axis);
     Matrix ret;
-    double x = _axis.x();
-    double y = _axis.y();
-    double z = _axis.z();
-    double cosine = cos(angle);
-    double sine = sin(angle);
-    double t = 1 - cosine;
+    float x = _axis.x();
+    float y = _axis.y();
+    float z = _axis.z();
+    float cosine = cos(angle);
+    float sine = sin(angle);
+    float t = 1 - cosine;
     //
     ret.x[0][0] = t * x * x + cosine;
     ret.x[0][1] = t * x * y - sine * y;
@@ -335,10 +335,10 @@ public:
     ret.x[3][3] = 1.0;
     return ret;
   }
-  __host__ __device__ friend Matrix rotateX(double angle) {
+  __host__ __device__ friend Matrix rotateX(float angle) {
     Matrix ret = identityMatrix();
-    double cosine = cos(angle);
-    double sine = sin(angle);
+    float cosine = cos(angle);
+    float sine = sin(angle);
     ret.x[l][l] = cosine;
     ret.x[l][2] = -sine;
     ret.x[2][1] = sine;
@@ -346,13 +346,13 @@ public:
     return ret;
   }
   __host__ __device__ friend Matrix rotateX(int deg) {
-    double radian = degree_to_radian(deg);
+    float radian = degree_to_radian(deg);
     return rotateX(radian);
   }
-  __host__ __device__ friend Matrix rotateY(double angle) {
+  __host__ __device__ friend Matrix rotateY(float angle) {
     Matrix ret = identityMatrix();
-    double cosine = cos(angle);
-    double sine = sin(angle);
+    float cosine = cos(angle);
+    float sine = sin(angle);
     ret.x[0][0] = cosine;
     ret.x[0][2] = sine;
     ret.x[2][0] = -sine;
@@ -361,14 +361,14 @@ public:
   } // More efficient than arbitrary axis
 
   __host__ __device__ friend Matrix rotateY(int deg) {
-    double radian = degree_to_radian(deg);
+    float radian = degree_to_radian(deg);
     return rotateY(radian);
   }
-  __host__ __device__ friend Matrix rotateZ(double angle) {
+  __host__ __device__ friend Matrix rotateZ(float angle) {
     //
     Matrix ret = identityMatrix();
-    double cosine = cos(angle);
-    double sine = sin(angle);
+    float cosine = cos(angle);
+    float sine = sin(angle);
     ret.x[0][0] = cosine;
     ret.x[0][1] = -sine;
     ret.x[1][0] = sine;
@@ -376,7 +376,7 @@ public:
     return ret;
   } //
   __host__ __device__ friend Matrix rotateZ(int deg) {
-    double angle = degree_to_radian(deg);
+    float angle = degree_to_radian(deg);
     return rotateZ(angle);
   }
   __host__ __device__ friend Matrix
@@ -406,8 +406,8 @@ public:
     ret = ret * move;
     return ret;
   }
-  __host__ __device__ double determinant() {
-    double det;
+  __host__ __device__ float determinant() {
+    float det;
     det = x[0][0] * det3(x[1][1], x[1][2], x[1][3], x[2][1],
                          x[2][2], x[2][3], x[3][1], x[3][2],
                          x[3][3]);
@@ -425,7 +425,7 @@ public:
                           x[3][0], x[3][1], x[3][2]);
     return det;
   }
-  double x[4][4];
+  float x[4][4];
 };
 
 #endif

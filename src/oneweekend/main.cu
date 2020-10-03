@@ -32,7 +32,7 @@ __device__ Color ray_color(const Ray &r, Hittables **world,
       }
     } else {
       Vec3 udir = to_unit(current_ray.direction());
-      double t = 0.5f * (udir.y() + 1.0f);
+      float t = 0.5f * (udir.y() + 1.0f);
       Vec3 out = (1.0f - t) * Vec3(1.0f) +
                  t * Vec3(0.5f, 0.7f, 1.0f);
       return current_attenuation * out;
@@ -81,16 +81,16 @@ __global__ void render(Vec3 *fb, int maximum_x,
   curandState localS = randState[pixel_index];
   Vec3 rcolor(0.0f);
   for (int s = 0; s < sample_nb; s++) {
-    double u = double(i + curand_uniform(&localS)) /
-              double(maximum_x);
-    double v = double(j + curand_uniform(&localS)) /
-              double(maximum_y);
+    float u = float(i + curand_uniform(&localS)) /
+              float(maximum_x);
+    float v = float(j + curand_uniform(&localS)) /
+              float(maximum_y);
     Ray r = cam[0]->get_ray(u, v, &localS);
     rcolor += ray_color(r, world, randState, bounceNb);
   }
   // fix the bounce depth
   randState[pixel_index] = localS;
-  rcolor /= double(sample_nb);
+  rcolor /= float(sample_nb);
   rcolor.e[0] = sqrt(rcolor.x());
   rcolor.e[1] = sqrt(rcolor.y());
   rcolor.e[2] = sqrt(rcolor.z());
@@ -109,15 +109,15 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     int halfRow = row / 2;
     for (int a = -halfRow; a < halfRow; a++) {
       for (int b = -halfRow; b < halfRow; b++) {
-        double choose_mat = curand_uniform(randState);
+        float choose_mat = curand_uniform(randState);
         Vec3 center(a + curand_uniform(randState), 0.2,
                     b + curand_uniform(randState));
         if (choose_mat < 0.8f) {
           Point3 center2 =
               center +
-              Vec3(0, random_double(randState, 0.0, 0.5), 0);
-          Color albedo = random_double(randState);
-          albedo *= random_double(randState);
+              Vec3(0, random_float(randState, 0.0, 0.5), 0);
+          Color albedo = random_float(randState);
+          albedo *= random_float(randState);
           Material *lamb1 = new Lambertian(albedo);
           ss[i++] = new MovingSphere(center, center2, 0.0,
                                      1.0, 0.2, lamb1);
@@ -149,11 +149,11 @@ __global__ void make_world(Hittables **world, Hittable **ss,
 
     Vec3 lookfrom(13, 2, 3);
     Vec3 lookat(0, 0, 0);
-    double dist_to_focus = 10.0;
+    float dist_to_focus = 10.0;
     (lookfrom - lookat).length();
-    double aperture = 0.1;
+    float aperture = 0.1;
     cam[0] = new Camera(lookfrom, lookat, Vec3(0, 1, 0),
-                        20.0, double(nx) / double(ny),
+                        20.0, float(nx) / float(ny),
                         aperture, dist_to_focus, 0.0, 1.0);
   }
 }
@@ -169,7 +169,7 @@ __global__ void free_world(Hittables **world, Hittable **ss,
 }
 
 int main() {
-  double aspect_ratio = 16.0f / 9.0f;
+  float aspect_ratio = 16.0f / 9.0f;
   int WIDTH = 320;
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
   int BLOCK_WIDTH = 10;
@@ -251,8 +251,8 @@ int main() {
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
   biter = clock();
-  double saniyeler =
-      ((double)(biter - baslar)) / CLOCKS_PER_SEC;
+  float saniyeler =
+      ((float)(biter - baslar)) / CLOCKS_PER_SEC;
   std::cerr << "Islem " << saniyeler << " saniye surdu"
             << std::endl;
 
