@@ -166,14 +166,14 @@ public:
 
 class DiffuseLight : public Material {
 public:
-  Texture *emit;
+  Texture *albedo;
 
 public:
   __host__ __device__ DiffuseLight() {}
-  __host__ __device__ DiffuseLight(Texture *t) : emit(t) {}
+  __host__ __device__ DiffuseLight(Texture *t) : albedo(t) {}
   __host__ __device__ DiffuseLight(Color c)
-      : emit(new SolidColor(c)) {}
-  __host__ __device__ ~DiffuseLight() { delete emit; }
+      : albedo(new SolidColor(c)) {}
+  __host__ __device__ ~DiffuseLight() { delete albedo; }
 
   __device__ bool
   scatter(const Ray &r_in, const HitRecord &rec,
@@ -183,7 +183,7 @@ public:
   }
   __host__ __device__ Color emitted(
       float u, float v, const Point3 &p) const override {
-    return emit->value(u, v, p);
+    return albedo->value(u, v, p);
   }
 };
 

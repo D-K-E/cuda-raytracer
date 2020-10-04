@@ -142,74 +142,6 @@ void make_empty_host_cornell_box(
   hs = thrust::device_malloc<Hittable *>(nb_hittable);
 }
 
-void make_empty_host_cornell_scene_obj() {
-  //
-  SceneObj green_wall;
-  unsigned char *imdata = (unsigned char *)'0';
-  green_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 555.0f,
-                    Vec3(1, 0, 0), LAMBERT, 0.0f, SOLID,
-                    0.12f, 0.45f, 0.15f, 0.0f, 0.0f, 0.0f,
-                    imdata, 0, 0, 0, 0, 0.0f);
-
-  Hittable *h1;
-  green_wall.to_obj(h1);
-
-  //
-  SceneObj red_wall;
-  red_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 0.0f,
-                  Vec3(1, 0, 0), LAMBERT, 0.0f, SOLID, .65f,
-                  .05f, .05f, 0.0f, 0.0f, 0.0f, imdata, 0,
-                  0, 0, 0, 0.0f);
-
-  Hittable *h2;
-  red_wall.to_obj(h2);
-  //
-  SceneObj light_obj;
-  light_obj.mkRect(213.0f, 343.0f, 227.0f, 332.0f, 554.0f,
-                   Vec3(0, 1, 0), LAMBERT, 0.0f, SOLID,
-                   15.0f, 15.0f, 15.0f, 0.0f, 0.0f, 0.0f,
-                   imdata, 0, 0, 0, 0, 0.0f);
-
-  Hittable *h3;
-  light_obj.to_obj(h3);
-  //
-  SceneObj white_wall;
-  white_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 0.0f,
-                    Vec3(0, 1, 0), LAMBERT, 0.0f, SOLID,
-                    .73f, .73f, .73f, 0.0f, 0.0f, 0.0f,
-                    imdata, 0, 0, 0, 0, 0.0f);
-
-  Hittable *h4;
-  white_wall.to_obj(h4);
-  //
-  SceneObj white_wall2;
-  white_wall2.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 555.0f,
-                     Vec3(0, 1, 0), LAMBERT, 0.0f, SOLID,
-                     .73f, .73f, .73f, 0.0f, 0.0f, 0.0f,
-                     imdata, 0, 0, 0, 0, 0.0f);
-
-  Hittable *h5;
-  white_wall2.to_obj(h5);
-
-  //
-  SceneObj blue_wall;
-  blue_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 555.0f,
-                   Vec3(0, 0, 1), LAMBERT, 0.0f, SOLID,
-                   .05f, .05f, .65f, 0.0f, 0.0f, 0.0f,
-                   imdata, 0, 0, 0, 0, 0.0f);
-
-  Hittable *h6;
-  blue_wall.to_obj(h6);
-  SceneObj *sobj_arr = new SceneObj[6];
-  sobj_arr[0] = green_wall;
-  sobj_arr[1] = red_wall;
-  sobj_arr[2] = light_obj;
-  sobj_arr[3] = white_wall;
-  sobj_arr[4] = white_wall2;
-  sobj_arr[5] = blue_wall;
-  SceneObjects sobjs(sobj_arr, 6);
-  SceneObj so = sobjs.get(2);
-}
 
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
@@ -253,29 +185,13 @@ int main() {
   CUDA_CONTROL(cudaDeviceSynchronize());
 
   // declare world
-  thrust::device_ptr<Hittable *> hs;
-  thrust::device_ptr<Hittables *> world;
-  // mk_world_host_hittable(hs, world);
-  make_empty_host_cornell_box(hs, world);
+  SceneObjects sobjs = mk_empty_host_cornell_scene();
+  SceneObjects d_sobjs = sobjs.to_device();
+  thrust::device_ptr<Hittables *> world =
+      thrust::device_malloc<Hittables *>(1);
 
-  thrust::device_ptr<int> imch;
-  thrust::device_ptr<int> imhs;
-  thrust::device_ptr<int> imwidths;
-  thrust::device_ptr<unsigned char> imdata;
-  // mk_image(imch, imhs, imwidths, imdata);
-
-  // make_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
-  //                   thrust::raw_pointer_cast(hs),
-  //                   thrust::raw_pointer_cast(randState2),
-  //                   side_box_nb,
-  //                   thrust::raw_pointer_cast(imdata),
-  //                   thrust::raw_pointer_cast(imwidths),
-  //                   thrust::raw_pointer_cast(imhs),
-  //                   thrust::raw_pointer_cast(imch));
-
-  make_empty_cornell_box<<<1, 1>>>(
-      thrust::raw_pointer_cast(world),
-      thrust::raw_pointer_cast(hs));
+  make_empty_cornell_box2<<<1, 1>>>(
+      thrust::raw_pointer_cast(world), d_sobjs);
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
 
@@ -334,7 +250,8 @@ int main() {
              randState1,                   //
              randState2);
              */
-  free_empty_cornell(fb, world, hs, randState1, randState2);
+  free_empty_cornell(fb, world, d_sobjs, randState1,
+                     randState2);
   // free_world(fb, world, hs, randState1, randState2);
   CUDA_CONTROL(cudaGetLastError());
 

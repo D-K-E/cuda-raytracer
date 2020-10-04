@@ -23,6 +23,13 @@ void download_to_host(T *d_ptr, T *h_ptr, int size) {
       cudaMemcpy((void *)h_ptr, (const void *)d_ptr,
                  sizeof(T) * size, cudaMemcpyDeviceToHost));
 }
+template <typename T>
+cudaError_t upload(T *&d_ptr, T *h_ptr, int size) {
+  cudaMalloc((void **)&(d_ptr), size * sizeof(T));
+  return cudaMemcpy((void *)d_ptr, (const void *)h_ptr,
+                    sizeof(T) * size,
+                    cudaMemcpyHostToDevice);
+}
 
 template <typename T>
 thrust::device_vector<T>

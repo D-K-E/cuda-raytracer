@@ -428,6 +428,225 @@ __global__ void make_empty_cornell_box(Hittables **world,
   }
 }
 
+SceneObjects mk_empty_host_cornell_scene() {
+  ScenePrimitive green_wall;
+  unsigned char *imdata = (unsigned char *)'0';
+  int imsize = 0;
+  float scale = 0.0f;
+  ImageParams imp(0, 0, 0, 0);
+  MatTextureParams green(
+      LAMBERT, 0.0f, SOLID, Color(0.12f, 0.45f, 0.15f),
+      Color(0.0f, 0.0f, 0.0f), imdata, imsize, imp, scale);
+
+  green_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 555.0f,
+                    Vec3(1, 0, 0), green, INSTANCE, 0);
+
+  //
+  MatTextureParams red(
+      LAMBERT, 0.0f, SOLID, Color(0.62f, 0.05f, 0.05f),
+      Color(0.0f, 0.0f, 0.0f), imdata, imsize, imp, scale);
+
+  ScenePrimitive red_wall;
+  red_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 0.0f,
+                  Vec3(1, 0, 0), red, INSTANCE, 0);
+
+  //
+  MatTextureParams light(
+      DIFFUSE_LIGHT, 0.0f, SOLID, Color(15.0f),
+      Color(0.0f, 0.0f, 0.0f), imdata, imsize, imp, scale);
+
+  ScenePrimitive light_obj;
+  light_obj.mkRect(213.0f, 343.0f, 227.0f, 332.0f, 554.0f,
+                   Vec3(0, 1, 0), light, INSTANCE, 0);
+
+  //
+  MatTextureParams white(LAMBERT, 0.0f, SOLID, Color(0.73f),
+                         Color(0.0f, 0.0f, 0.0f), imdata,
+                         imsize, imp, scale);
+
+  ScenePrimitive white_wall;
+  white_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 0.0f,
+                    Vec3(0, 1, 0), white, INSTANCE, 0);
+
+  //
+  ScenePrimitive white_wall2;
+  white_wall2.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 555.0f,
+                     Vec3(0, 1, 0), white, INSTANCE, 0);
+
+  //
+  MatTextureParams blue(
+      LAMBERT, 0.0f, SOLID, Color(0.05f, 0.05f, 0.65f),
+      Color(0.0f, 0.0f, 0.0f), imdata, imsize, imp, scale);
+
+  ScenePrimitive blue_wall;
+  blue_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 555.0f,
+                   Vec3(0, 0, 1), blue, INSTANCE, 0);
+
+  //
+  ScenePrimitive *sobj_arr = new ScenePrimitive[6];
+  sobj_arr[0] = green_wall;
+  sobj_arr[1] = red_wall;
+  sobj_arr[2] = light_obj;
+  sobj_arr[3] = white_wall;
+  sobj_arr[4] = white_wall2;
+  sobj_arr[5] = blue_wall;
+  //
+  SceneObjects sobjs(sobj_arr, 6);
+  return sobjs;
+}
+
+__global__ void
+make_empty_cornell_box2(Hittables **world,
+                        SceneObjects sobjs) {
+  // declare objects
+  if (threadIdx.x == 0 && blockIdx.x == 0) {
+    Hittable **hs = new Hittable *[sobjs.hlength];
+    sobjs.to_hittable_list(hs);
+    world[0] = new Hittables(hs, sobjs.hlength);
+  }
+}
+SceneObjects mk_filled_cornell_2() {
+  //
+  ScenePrimitive green_wall;
+  unsigned char *imdata = (unsigned char *)'0';
+  int imsize = 0;
+  float scale = 0.0f;
+  ImageParams imp(0, 0, 0, 0);
+  MatTextureParams green(
+      LAMBERT, 0.0f, SOLID, Color(0.12f, 0.45f, 0.15f),
+      Color(0.0f, 0.0f, 0.0f), imdata, imsize, imp, scale);
+
+  green_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 555.0f,
+                    Vec3(1, 0, 0), green, INSTANCE, 0);
+
+  //
+  MatTextureParams red(
+      LAMBERT, 0.0f, SOLID, Color(0.62f, 0.05f, 0.05f),
+      Color(0.0f, 0.0f, 0.0f), imdata, imsize, imp, scale);
+
+  ScenePrimitive red_wall;
+  red_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 0.0f,
+                  Vec3(1, 0, 0), red, INSTANCE, 0);
+
+  //
+  MatTextureParams light(
+      DIFFUSE_LIGHT, 0.0f, SOLID, Color(15.0f),
+      Color(0.0f, 0.0f, 0.0f), imdata, imsize, imp, scale);
+
+  ScenePrimitive light_obj;
+  light_obj.mkRect(213.0f, 343.0f, 227.0f, 332.0f, 554.0f,
+                   Vec3(0, 1, 0), light, INSTANCE, 0);
+
+  //
+  MatTextureParams white(LAMBERT, 0.0f, SOLID, Color(0.73f),
+                         Color(0.0f, 0.0f, 0.0f), imdata,
+                         imsize, imp, scale);
+
+  ScenePrimitive white_wall;
+  white_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 0.0f,
+                    Vec3(0, 1, 0), white, INSTANCE, 0);
+
+  //
+  ScenePrimitive white_wall2;
+  white_wall2.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 555.0f,
+                     Vec3(0, 1, 0), white, INSTANCE, 0);
+
+  //
+  MatTextureParams blue(
+      LAMBERT, 0.0f, SOLID, Color(0.05f, 0.05f, 0.65f),
+      Color(0.0f, 0.0f, 0.0f), imdata, imsize, imp, scale);
+
+  ScenePrimitive blue_wall;
+  blue_wall.mkRect(0.0f, 555.0f, 0.0f, 555.0f, 555.0f,
+                   Vec3(0, 0, 1), blue, INSTANCE, 0);
+  ScenePrimitive *sobj_arr = new ScenePrimitive[6];
+  sobj_arr[0] = green_wall;
+  sobj_arr[1] = red_wall;
+  sobj_arr[2] = light_obj;
+  sobj_arr[3] = white_wall;
+  sobj_arr[4] = white_wall2;
+  sobj_arr[5] = blue_wall;
+  //
+  SceneObjects sobjs(sobj_arr, 6);
+  return sobjs;
+}
+__global__ void make_filled_cornell_box2(Hittables **world,
+                                         Hittable **ss) {
+  // declare objects
+  if (threadIdx.x == 0 && blockIdx.x == 0) {
+
+    Material *red = new Lambertian(Color(.65, .05, .05));
+    Material *blue = new Lambertian(Color(.05, .05, .65));
+    Material *white = new Lambertian(Color(.73, .73, .73));
+    Material *green = new Lambertian(Color(.12, .45, .15));
+    Material *light = new DiffuseLight(Color(15, 15, 15));
+
+    // ----------- Groups --------------------
+    Hittable **groups = new Hittable *[3];
+
+    int obj_count = 0;
+    int group_count = 0;
+    // --------------- cornell box group ----------------
+
+    ss[obj_count] = new YZRect(0, 555, 0, 555, 555, green);
+    obj_count++;
+    ss[obj_count] = new YZRect(0, 555, 0, 555, 0, red);
+    obj_count++;
+    ss[obj_count] =
+        new XZRect(213, 343, 227, 332, 554, light);
+    obj_count++;
+    ss[obj_count] = new XZRect(0, 555, 0, 555, 0, white);
+    obj_count++;
+    ss[obj_count] = new XZRect(0, 555, 0, 555, 555, white);
+    obj_count++;
+    ss[obj_count] = new XYRect(0, 555, 0, 555, 555, blue);
+
+    Hittable *c_box =
+        new HittableGroup(ss, 0, obj_count + 1);
+    groups[group_count] = c_box;
+
+    // -------------- Boxes -------------------------
+
+    obj_count++;
+    Point3 bp1(0.0f);
+    Point3 bp2(165, 330, 165);
+    Box b1(bp1, bp2, white, ss, obj_count);
+    b1.rotate_y(ss, 15.0f);
+    b1.translate(ss, Vec3(265, 0, 295));
+    // b1.to_gas(0.01f, &randState, Color(1.0, 0.3, 0.7),
+    // ss);
+    Hittable *tall_box =
+        new HittableGroup(ss, b1.start_index, b1.end_index);
+
+    curandState randState;
+    curand_init(obj_count, 0, 0, &randState);
+    Hittable *smoke_box1 = new ConstantMedium(
+        tall_box, 0.01, Color(0.8f, 0.2, 0.4), &randState);
+    group_count++;
+    groups[group_count] = smoke_box1;
+
+    obj_count++;
+    Point3 bp3(0.0f);
+    Point3 bp4(165.0f);
+    Box b2(bp3, bp4, white, ss, obj_count);
+    b2.rotate_y(ss, -18.0f);
+    b2.translate(ss, Point3(130, 0, 165));
+    obj_count++;
+
+    Hittable *short_box =
+        new HittableGroup(ss, b2.start_index, b2.end_index);
+    Hittable *smoke_box2 = new ConstantMedium(
+        short_box, 0.01, Color(0.8f, 0.3, 0.8), &randState);
+
+    group_count++;
+    groups[group_count] = smoke_box2;
+
+    group_count++;
+
+    world[0] = new Hittables(groups, group_count);
+  }
+}
+
 void free_empty_cornell(
     thrust::device_ptr<Vec3> &fb,
     thrust::device_ptr<Hittables *> &world,
@@ -440,6 +659,26 @@ void free_empty_cornell(
   thrust::device_free(world);
   CUDA_CONTROL(cudaGetLastError());
   thrust::device_free(hs);
+  CUDA_CONTROL(cudaGetLastError());
+
+  CUDA_CONTROL(cudaGetLastError());
+  thrust::device_free(randState2);
+  CUDA_CONTROL(cudaGetLastError());
+  thrust::device_free(randState1);
+  CUDA_CONTROL(cudaGetLastError());
+}
+void free_empty_cornell(
+    thrust::device_ptr<Vec3> &fb,
+    thrust::device_ptr<Hittables *> &world,
+    SceneObjects d_sobjs,
+    thrust::device_ptr<curandState> randState1,
+    thrust::device_ptr<curandState> randState2) {
+
+  thrust::device_free(fb);
+  CUDA_CONTROL(cudaGetLastError());
+  thrust::device_free(world);
+  CUDA_CONTROL(cudaGetLastError());
+  d_sobjs.free();
   CUDA_CONTROL(cudaGetLastError());
 
   CUDA_CONTROL(cudaGetLastError());
