@@ -13,6 +13,7 @@
 #include <thrust/device_new.h>
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
+#include <thrust/unique.h>
 #include <thrust/random.h>
 #include <time.h>
 

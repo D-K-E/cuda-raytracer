@@ -7,426 +7,20 @@
 #include <nextweek/hittable.cuh>
 #include <nextweek/material.cuh>
 #include <nextweek/ray.cuh>
+#include <nextweek/sceneparam.cuh>
+#include <nextweek/scenetype.cuh>
 #include <nextweek/sphere.cuh>
 #include <nextweek/triangle.cuh>
 #include <nextweek/vec3.cuh>
-
-enum TextureType : int {
-  SOLID = 1,
-  CHECKER = 2,
-  NOISE = 3,
-  IMAGE = 4
-};
-
-enum MaterialType : int {
-  LAMBERT = 1,
-  METAL = 2,
-  DIELECTRIC = 3,
-  DIFFUSE_LIGHT = 4,
-  ISOTROPIC = 5
-};
-
-enum HittableType : int {
-  LINE = 1,
-  TRIANGLE = 2,
-  SPHERE = 3,
-  MOVING_SPHERE = 4,
-  RECTANGLE = 5
-};
-
-enum GroupType : int { INSTANCE = 1, CONSTANT_MEDIUM = 2 };
-
-struct ImageParams {
-  int width;
-  int height;
-  int index;
-  int bytes_per_pixel;
-  __host__ __device__ ImageParams(int w, int h, int bpp,
-                                  int idx)
-      : width(w), height(h), bytes_per_pixel(bpp),
-        index(idx) {}
-};
-
-struct MatTextureParams {
-  MaterialType mtype;
-  float fuzz;
-
-  // texture related
-  TextureType ttype;
-
-  float tp1x, tp1y, tp1z; // solid color, checker texture
-  float tp2x, tp2y, tp2z; // checker texture
-  unsigned char *data;    // image texture
-  int data_size;          // image texture size
-  int width, height;      // image texture
-  int bytes_per_pixel;    // image texture
-  int index;              // image texture
-  float scale;            // noise texture
-
-  //
-  __host__ __device__ MatTextureParams(
-      MaterialType mt, float f, TextureType tt, float _tp1x,
-      float _tp1y, float _tp1z, float _tp2x, float _tp2y,
-      float _tp2z, unsigned char *&dt, int dsize,
-      ImageParams imp, float sc)
-      : mtype(mt), fuzz(f), ttype(tt), tp1x(_tp1x),
-        tp1y(_tp1y), tp1z(_tp1z), tp2x(_tp2x), tp2y(_tp2y),
-        tp2z(_tp2z), width(imp.width), height(imp.height),
-        bytes_per_pixel(imp.bytes_per_pixel), data(dt),
-        data_size(dsize), index(imp.index), scale(sc) {}
-  __host__ __device__
-  MatTextureParams(MaterialType mt, float f, TextureType tt,
-                   Color c1, Color c2, unsigned char *&dt,
-                   int dsize, ImageParams imp, float sc)
-      : mtype(mt), fuzz(f), ttype(tt), tp1x(c1.x()),
-        tp1y(c1.y()), tp1z(c1.z()), tp2x(c2.x()),
-        tp2y(c2.y()), tp2z(c2.z()), width(imp.width),
-        height(imp.height),
-        bytes_per_pixel(imp.bytes_per_pixel), data(dt),
-        data_size(dsize), index(imp.index), scale(sc) {}
-};
-
-struct HittableParams {
-  int group_id; // for instances and different mediums
-  GroupType gtype;
-
-  HittableType htype;
-  float radius;
-  float p1x, p1y, p1z;
-  float p2x, p2y, p2z;
-  float p3x, p3y, p3z;
-
-  __host__ __device__ HittableParams() {}
-  __host__ __device__ HittableParams(GroupType gt, int gid,
-                                     HittableType ht,
-                                     float r, float _p1x,
-                                     float _p1y, float _p1z,
-                                     float _p2x, float _p2y,
-                                     float _p2z, float _p3x,
-                                     float _p3y, float _p3z)
-      : gtype(gt), group_id(gid), htype(ht), radius(r),
-        p1x(_p1x), p1y(_p1y), p1z(_p1z), p2x(_p2x),
-        p2y(_p2y), p2z(_p2z), p3x(_p3x), p3y(_p3y),
-        p3z(_p3z) {}
-  __host__ __device__ HittableParams(GroupType gt, int gid,
-                                     HittableType ht,
-                                     float r, Point3 p1,
-                                     Point3 p2, Point3 p3)
-      : gtype(gt), group_id(gid), htype(ht), radius(r),
-        p1x(p1.x()), p1y(p1.y()), p1z(p1.z()), p2x(p2.x()),
-        p2y(p2.y()), p2z(p2.z()), p3x(p3.x()), p3y(p3.y()),
-        p3z(p3.z()) {}
-
-  __host__ __device__ void set_to_zero() {
-    group_id = 0;
-    gtype = INSTANCE;
-    p1x = 0.0f;
-    p1y = 0.0f;
-    p1z = 0.0f;
-
-    p2x = 0.0f;
-    p2y = 0.0f;
-    p2z = 0.0f;
-
-    p3x = 0.0f;
-    p3y = 0.0f;
-    p3z = 0.0f;
-    radius = 0.0f;
-  }
-
-  __host__ __device__ void mkSphere(Point3 cent, float r) {
-    set_to_zero();
-    htype = SPHERE;
-    radius = r;
-    p1x = cent.x();
-    p1y = cent.y();
-    p1z = cent.z();
-  }
-  __host__ __device__ void mkSphere(Point3 cent, float r,
-                                    int gid, GroupType gt) {
-    mkSphere(cent, r);
-    group_id = gid;
-    gtype = gt;
-  }
-  __host__ __device__ void mkRect(float a0, //
-                                  float a1, //
-                                  float b0, //
-                                  float b1, //
-                                  float _k, //
-                                  Vec3 anorm) {
-    set_to_zero();
-    htype = RECTANGLE;
-    p1x = a0;
-    p1y = a1;
-    p2x = b0;
-    p2y = b1;
-    p2z = _k;
-    p3x = anorm.x();
-    p3y = anorm.y();
-    p3z = anorm.z();
-  }
-  __host__ __device__ void mkRect(float a0, //
-                                  float a1, //
-                                  float b0, //
-                                  float b1, //
-                                  float _k, //
-                                  Vec3 anorm, int gid,
-                                  GroupType gt) {
-    mkRect(a0, a1, b0, b1, _k, anorm);
-    group_id = gid;
-    gtype = gt;
-  }
-};
-
-struct ScenePrimitive {
-public:
-  int group_id; // for instances and different mediums
-  GroupType gtype;
-
-  // object related
-  HittableType htype;
-  float radius;
-  float p1x, p1y, p1z;
-  float p2x, p2y, p2z;
-  float p3x, p3y, p3z;
-  //
-  // material related
-  MaterialType mtype;
-  float fuzz;
-
-  // texture related
-  TextureType ttype;
-
-  float tp1x, tp1y, tp1z; // solid color, checker texture
-  float tp2x, tp2y, tp2z; // checker texture
-  unsigned char *data;    // image texture
-  int data_size;          // image texture size
-  int width, height;      // image texture
-  int bytes_per_pixel;    // image texture
-  int index;              // image texture
-  float scale;            // noise texture
-
-  curandState *rstate;
-
-  Hittable *h;
-  Texture *t;
-  Material *m;
-
-  __host__ __device__ ScenePrimitive() {}
-  __host__ __device__ ScenePrimitive(HittableParams &hp,
-                                     MatTextureParams &mp)
-      : rstate(nullptr) {
-    set_hittable_params(hp);
-    set_material_props(mp);
-    set_hittable();
-  }
-
-  __device__ ScenePrimitive(HittableParams &hp,
-                            MatTextureParams &mp,
-                            curandState *rs) {
-    set_hittable_params(hp);
-    set_material_props(mp, rs);
-    set_hittable_device();
-  }
-
-  __host__ __device__ void
-  set_hittable_params(HittableParams &params) {
-    gtype = params.gtype;
-    group_id = params.group_id;
-    htype = params.htype;
-    radius = params.radius;
-
-    p1x = params.p1x;
-    p1y = params.p1y;
-    p1z = params.p1z;
-
-    p2x = params.p2x;
-    p2y = params.p2y;
-    p2z = params.p2z;
-
-    p3x = params.p3x;
-    p3y = params.p3y;
-    p3z = params.p3z;
-  }
-
-  __host__ __device__ void
-  set_material_props(MatTextureParams &params) {
-    mtype = params.mtype;
-    fuzz = params.fuzz;
-    ttype = params.ttype;
-    tp1x = params.tp1x;
-    tp1y = params.tp1y;
-    tp1z = params.tp1z;
-    tp2x = params.tp2x;
-    tp2y = params.tp2y;
-    tp2z = params.tp2z;
-    data = params.data;
-    data_size = params.data_size;
-    width = params.width;
-    height = params.height;
-    index = params.index;
-    scale = params.scale;
-  }
-
-  __device__ void
-  set_material_props(MatTextureParams &params,
-                     curandState *loc) {
-    set_material_props(params);
-    rstate = loc;
-  }
-
-  __host__ __device__ void set_hittable() {
-    to_texture();
-    to_material();
-    to_hittable();
-  }
-  __device__ void set_hittable_device() {
-    to_texture_device();
-    to_material();
-    to_hittable();
-  }
-
-  __host__ __device__ void
-  mkSphere(Point3 cen, float r, MatTextureParams &params) {
-
-    HittableParams hp;
-    hp.mkSphere(cen, r);
-    set_hittable_params(hp);
-    set_material_props(params);
-    set_hittable();
-  }
-  __device__ void mkSphere(Point3 cen, float r,
-                           MatTextureParams &params,
-                           curandState *rst) {
-    HittableParams hp;
-    hp.mkSphere(cen, r);
-    set_hittable_params(hp);
-    set_material_props(params, rst);
-    set_hittable_device();
-  }
-
-  __host__ __device__ void mkRect(float a0,   //
-                                  float a1,   //
-                                  float b0,   //
-                                  float b1,   //
-                                  float _k,   //
-                                  Vec3 anorm, //
-                                  MatTextureParams params,
-                                  GroupType gt, int gid) {
-    HittableParams hp;
-    hp.mkRect(a0, a1, b0, b1, _k, anorm, gid, gt);
-    set_hittable_params(hp);
-    set_material_props(params);
-    set_hittable();
-  }
-  __device__ void mkRect(float a0, float a1, float b0,
-                         float b1, float _k,
-                         Vec3 anorm, //
-                         MatTextureParams params,
-                         curandState *rst, // noise texture
-                         GroupType gt, int gid) {
-    HittableParams hp;
-    hp.mkRect(a0, a1, b0, b1, _k, anorm, gid, gt);
-    set_material_props(params, rst);
-    set_hittable_device();
-  }
-
-  __host__ __device__ void to_solid_color() {
-    t = new SolidColor(tp1x, tp1y, tp1z);
-  }
-  __host__ __device__ void to_checker() {
-    Color s1(tp1x, tp1y, tp1z);
-    Color s2(tp2x, tp2y, tp2z);
-    t = new CheckerTexture(s1, s2);
-  }
-  __host__ __device__ void to_image() {
-
-    t = new ImageTexture(data, width, height,
-                         width * bytes_per_pixel,
-                         bytes_per_pixel, index);
-  }
-  __device__ void to_noise() {
-    t = new NoiseTexture(scale, rstate);
-  }
-  __host__ __device__ void to_texture() {
-    if (ttype == SOLID) {
-      to_solid_color();
-    } else if (ttype == CHECKER) {
-      to_checker();
-    } else {
-      to_image();
-    }
-  }
-  __device__ void to_texture_device() {
-    if (ttype == SOLID) {
-      to_solid_color();
-    } else if (ttype == CHECKER) {
-      to_checker();
-    } else if (ttype == IMAGE) {
-      to_image();
-    } else {
-      to_noise();
-    }
-  }
-  __host__ __device__ void to_material() {
-
-    switch (mtype) {
-    case LAMBERT:
-      m = new Lambertian(t);
-      break;
-    case METAL:
-      m = new Metal(t, fuzz);
-      break;
-    case DIELECTRIC:
-      m = new Dielectric(fuzz);
-      break;
-    case DIFFUSE_LIGHT:
-      m = new DiffuseLight(t);
-      break;
-    case ISOTROPIC:
-      m = new Isotropic(t);
-      break;
-    }
-  }
-  __host__ __device__ void to_sphere() {
-    h = new Sphere(Point3(p1x, p1y, p1z), radius, m);
-  }
-  __host__ __device__ void to_moving_sphere() {
-    h = new MovingSphere(Point3(p1x, p1y, p1z),
-                         Point3(p2x, p2y, p2z), p3x, p3y,
-                         radius, m);
-  }
-  __host__ __device__ void to_aarect() {
-    h = new AaRect(p1x, p1y, p2x, p2y, p2z, m,
-                   Vec3(p3x, p3y, p3z));
-  }
-  __host__ __device__ void to_triangle() {
-    h = new Triangle(Point3(p1x, p1y, p1z),
-                     Point3(p2x, p2y, p2z),
-                     Point3(p3x, p3y, p3z), m);
-  }
-  __host__ __device__ void to_hittable() {
-    //
-    if (htype == TRIANGLE) {
-      to_triangle();
-    } else if (htype == SPHERE) {
-      to_sphere();
-    } else if (htype == MOVING_SPHERE) {
-      to_moving_sphere();
-    } else if (htype == RECTANGLE) {
-      to_aarect();
-    }
-    // h->mat_ptr = m;
-  }
-
-  __host__ __device__ void to_obj(Hittable *&ht) { ht = h; }
-  __device__ void to_obj_device(Hittable *&ht) { ht = h; }
-};
 
 struct SceneObjects {
   // objects
   int *gtypes;
   int *group_ids;
+  int *group_starts;
+  int *group_ends;
+
+  // surfaces
   int *htypes;
   float *rads;
   float *p1xs, *p1ys, *p1zs;
@@ -532,44 +126,7 @@ struct SceneObjects {
     for (int i = 0; i < hlength; i++) {
       //
       ScenePrimitive sobj = objs[i];
-      gtypes[i] = sobj.gtype;
-      group_ids[i] = sobj.group_id;
-      htypes[i] = sobj.htype;
-      rads[i] = sobj.radius;
-
-      p1xs[i] = sobj.p1x;
-      p1ys[i] = sobj.p1y;
-      p1zs[i] = sobj.p1z;
-
-      p2xs[i] = sobj.p2x;
-      p2ys[i] = sobj.p2y;
-      p2zs[i] = sobj.p2z;
-
-      p3xs[i] = sobj.p3x;
-      p3ys[i] = sobj.p3y;
-      p3zs[i] = sobj.p3z;
-
-      //
-      mtypes[i] = sobj.mtype;
-      fuzzs[i] = sobj.fuzz;
-
-      //
-      ttypes[i] = sobj.ttype;
-
-      tp1xs[i] = sobj.tp1x;
-      tp1ys[i] = sobj.tp1y;
-      tp1zs[i] = sobj.tp1z;
-
-      tp2xs[i] = sobj.tp2x;
-      tp2ys[i] = sobj.tp2y;
-      tp2zs[i] = sobj.tp2z;
-
-      //
-      ws[i] = sobj.width;
-      hs[i] = sobj.height;
-      bpps[i] = sobj.bytes_per_pixel;
-      tindices[i] = sobj.index;
-      scales[i] = sobj.scale;
+      set_object(sobj, i);
 
       if (data_check == false && sobj.data) {
         tdata = sobj.data;
@@ -577,6 +134,69 @@ struct SceneObjects {
         tdata_size = sobj.data_size;
       }
     }
+  }
+  __host__ __device__ SceneObjects(SceneGroup *&objs,
+                                   int nb_group,
+                                   int total_prim_nb)
+      : hlength(total_prim_nb) {
+    init_arrays();
+    bool data_check = false;
+    int i = 0;
+    for (int k = 0; k < nb_group; k++) {
+      //
+      SceneGroup g = objs[k];
+      int prim_nb = g.group_size;
+      ScenePrimitive *sp = g.prims;
+      for (int j = 0; j < prim_nb; j++) {
+        ScenePrimitive prim = sp[j];
+        set_object(prim, i);
+        if (data_check == false && sobj.data) {
+          tdata = prim.data;
+          data_check = true;
+          tdata_size = prim.data_size;
+        }
+        i++;
+      }
+    }
+  }
+
+  __host__ __device__ void
+  set_object(const ScenePrimitive &sobj, int obj_index) {
+    gtypes[obj_index] = sobj.gtype;
+    group_ids[obj_index] = sobj.group_id;
+    htypes[obj_index] = sobj.htype;
+    rads[obj_index] = sobj.radius;
+
+    p1xs[obj_index] = sobj.p1x;
+    p1ys[obj_index] = sobj.p1y;
+    p1zs[obj_index] = sobj.p1z;
+
+    p2xs[obj_index] = sobj.p2x;
+    p2ys[obj_index] = sobj.p2y;
+    p2zs[obj_index] = sobj.p2z;
+
+    p3xs[obj_index] = sobj.p3x;
+    p3ys[obj_index] = sobj.p3y;
+    p3zs[obj_index] = sobj.p3z;
+    //
+    mtypes[obj_index] = sobj.mtype;
+    fuzzs[obj_index] = sobj.fuzz;
+    //
+    ttypes[obj_index] = sobj.ttype;
+
+    tp1xs[obj_index] = sobj.tp1x;
+    tp1ys[obj_index] = sobj.tp1y;
+    tp1zs[obj_index] = sobj.tp1z;
+
+    tp2xs[obj_index] = sobj.tp2x;
+    tp2ys[obj_index] = sobj.tp2y;
+    tp2zs[obj_index] = sobj.tp2z;
+    //
+    ws[obj_index] = sobj.width;
+    hs[obj_index] = sobj.height;
+    bpps[obj_index] = sobj.bytes_per_pixel;
+    tindices[obj_index] = sobj.index;
+    scales[obj_index] = sobj.scale;
   }
 
   __host__ SceneObjects to_device() {
@@ -769,7 +389,36 @@ struct SceneObjects {
 
     return sobj;
   }
+
+  __host__ __device__ int count_group(int group_id) {
+    int group_count = 0;
+    for (int i = 0; i < hlength; i++) {
+      int gid = group_ids[i];
+      if (gid == group_id) {
+        group_count++;
+      }
+    }
+    return group_count;
+  }
   __host__ __device__ void
+  mk_hittable_group(GroupType gtype, Hittable **&hs,
+                    int sindex, int eindex) {}
+  __host__ __device__ void
+  mk_group(GroupType gtype, int group_id, Hittable *&h) {
+    //
+    int gcount = count_group(group_id);
+    int current_surface = 0;
+    Hittable **hgroup = new Hittable *[gcount];
+    for (int i = 0; i < hlength; i++) {
+      if (group_id == group_ids[i]) {
+        Hittable *surface;
+        ScenePrimitive p = get(i);
+        p.to_obj(surface);
+        hgroup[current_surface] = surface;
+        current_surface++;
+      }
+    }
+  }
   to_hittable_list(Hittable **&hs) {
     for (int i = 0; i < hlength; i++) {
 
