@@ -32,10 +32,34 @@ struct SceneGroup {
     box = b;
     center = box.center();
   }
+  __host__ __device__ HittableGroup *to_instance() {
+    Hittable **hs = new Hittable *[group_size];
+    for (int i = 0; i < group_size; i++) {
+      ScenePrimitive p = prims[i];
+      Hittable *h;
+      p.to_obj(h);
+      hs[i] = h;
+    }
+    HittableGroup *g = new HittableGroup(hs, group_size);
+    return g;
+  }
+  __host__ __device__ void to_constant_medium() {}
+  __host__ __device__ HittableGroup *to_hittable_group() {
+    HittableGroup *group;
+    switch (group_type) {
+    case INSTANCE:
+      group = to_instance();
+      break;
+    case CONSTANT_MEDIUM:
+      break;
+    }
+    return group;
+  }
 };
 
-int farthest_index(const SceneGroup &g,
-                   const SceneGroup *&gs, int nb_group) {
+__host__ __device__ int farthest_index(const SceneGroup &g,
+                                       SceneGroup *&gs,
+                                       int nb_group) {
   float max_dist = FLT_MIN;
   int max_dist_index = 0;
   Point3 g_center = g.center;
@@ -52,10 +76,11 @@ int farthest_index(const SceneGroup &g,
 
 // implementing list structure from
 // Foley et al. 2013, p. 1081
-void order_scene(SceneGroup *&gs, int nb_group) {
+__host__ __device__ void order_scene(SceneGroup *&gs,
+                                     int nb_group) {
   for (int i = 0; i < nb_group - 1; i += 2) {
     SceneGroup g = gs[i];
-    int fgi = farthest_group_index(g, gs, nb_group);
+    int fgi = farthest_index(g, gs, nb_group);
     swap(gs, i + 1, fgi);
   }
 }

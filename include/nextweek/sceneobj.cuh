@@ -7,7 +7,9 @@
 #include <nextweek/hittable.cuh>
 #include <nextweek/material.cuh>
 #include <nextweek/ray.cuh>
+#include <nextweek/scenegroup.cuh>
 #include <nextweek/sceneparam.cuh>
+#include <nextweek/sceneprim.cuh>
 #include <nextweek/scenetype.cuh>
 #include <nextweek/sphere.cuh>
 #include <nextweek/triangle.cuh>
@@ -18,7 +20,8 @@ struct SceneObjects {
   int *gtypes;
   int *group_ids;
   int *group_starts;
-  int *group_ends;
+  int *group_sizes;
+  int nb_group;
 
   // surfaces
   int *htypes;
@@ -54,10 +57,11 @@ struct SceneObjects {
       : hlength(obj_size) {
     init_arrays();
   }
-
   __host__ __device__ void free() {
     cudaFree(gtypes);
     cudaFree(group_ids);
+    cudaFree(group_starts);
+    cudaFree(group_sizes);
     cudaFree(htypes);
     cudaFree(rads);
     cudaFree(p1xs);
@@ -84,10 +88,13 @@ struct SceneObjects {
     cudaFree(tindices);
     cudaFree(scales);
   }
-
   __host__ __device__ void init_arrays() {
     gtypes = new int[hlength];
     group_ids = new int[hlength];
+    group_starts = new int[hlength];
+    group_sizes = new int[hlength];
+
+    //
     htypes = new int[hlength];
     rads = new float[hlength];
     p1xs = new float[hlength];
@@ -117,40 +124,42 @@ struct SceneObjects {
     tindices = new int[hlength];
     scales = new float[hlength];
   }
-
   __host__ __device__ SceneObjects(ScenePrimitive *&objs,
                                    int obj_length)
       : hlength(obj_length) {
-    init_arrays();
-    bool data_check = false;
-    for (int i = 0; i < hlength; i++) {
-      //
-      ScenePrimitive sobj = objs[i];
-      set_object(sobj, i);
-
-      if (data_check == false && sobj.data) {
-        tdata = sobj.data;
-        data_check = true;
-        tdata_size = sobj.data_size;
-      }
-    }
+    SceneGroup *gs = new SceneGroup(
+        objs[0].group_id, obj_length, objs[0].gtype, objs);
+    set_sgroups(gs, 1);
   }
   __host__ __device__ SceneObjects(SceneGroup *&objs,
-                                   int nb_group,
+                                   int nb_g,
                                    int total_prim_nb)
       : hlength(total_prim_nb) {
+    set_sgroups(objs, nb_g);
+  }
+  __host__ __device__ void set_sgroups(SceneGroup *&objs,
+                                       int nb_g) {
     init_arrays();
+    nb_group = nb_g;
+    gtypes = new int[nb_group];
+    group_ids = new int[nb_group];
+    group_starts = new int[nb_group];
+    group_sizes = new int[nb_group];
+
     bool data_check = false;
     int i = 0;
     for (int k = 0; k < nb_group; k++) {
-      //
       SceneGroup g = objs[k];
+      gtypes[k] = g.group_type;
+      group_ids[k] = g.group_id;
+      group_starts[k] = i;
       int prim_nb = g.group_size;
+      group_sizes[k] = prim_nb;
       ScenePrimitive *sp = g.prims;
       for (int j = 0; j < prim_nb; j++) {
         ScenePrimitive prim = sp[j];
         set_object(prim, i);
-        if (data_check == false && sobj.data) {
+        if (data_check == false && prim.data) {
           tdata = prim.data;
           data_check = true;
           tdata_size = prim.data_size;
@@ -159,11 +168,8 @@ struct SceneObjects {
       }
     }
   }
-
   __host__ __device__ void
   set_object(const ScenePrimitive &sobj, int obj_index) {
-    gtypes[obj_index] = sobj.gtype;
-    group_ids[obj_index] = sobj.group_id;
     htypes[obj_index] = sobj.htype;
     rads[obj_index] = sobj.radius;
 
@@ -198,18 +204,26 @@ struct SceneObjects {
     tindices[obj_index] = sobj.index;
     scales[obj_index] = sobj.scale;
   }
-
-  __host__ SceneObjects to_device() {
-    // device copy
-    SceneObjects sobjs(hlength);
-
+  __host__ void to_device_group(SceneObjects &sobjs) {
     int *gts = nullptr;
-    CUDA_CONTROL(upload<int>(gts, gtypes, hlength));
+    CUDA_CONTROL(upload<int>(gts, gtypes, nb_group));
     sobjs.gtypes = gts;
+
     int *gids = nullptr;
-    CUDA_CONTROL(upload<int>(gids, group_ids, hlength));
+    CUDA_CONTROL(upload<int>(gids, group_ids, nb_group));
     sobjs.group_ids = gids;
 
+    int *d_gstarts = nullptr;
+    CUDA_CONTROL(
+        upload<int>(d_gstarts, group_starts, nb_group));
+    sobjs.group_starts = d_gstarts;
+
+    int *d_gsizes = nullptr;
+    CUDA_CONTROL(
+        upload<int>(d_gsizes, group_sizes, nb_group));
+    sobjs.group_sizes = d_gsizes;
+  }
+  __host__ void to_device_surface(SceneObjects &sobjs) {
     int *hts = nullptr;
     CUDA_CONTROL(upload<int>(hts, htypes, hlength));
     sobjs.htypes = hts;
@@ -255,7 +269,8 @@ struct SceneObjects {
     float *d_p3zs;
     CUDA_CONTROL(upload<float>(d_p3zs, p3zs, hlength));
     sobjs.p3zs = d_p3zs;
-    //
+  }
+  __host__ void to_device_material(SceneObjects &sobjs) {
     int *d_mtypes;
     CUDA_CONTROL(upload<int>(d_mtypes, mtypes, hlength));
     sobjs.mtypes = d_mtypes;
@@ -263,7 +278,8 @@ struct SceneObjects {
     float *d_fuzzs;
     CUDA_CONTROL(upload<float>(d_fuzzs, fuzzs, hlength));
     sobjs.fuzzs = d_fuzzs;
-    //
+  }
+  __host__ void to_device_texture(SceneObjects &sobjs) {
     int *d_ttypes;
     CUDA_CONTROL(upload<int>(d_ttypes, ttypes, hlength));
     sobjs.ttypes = d_ttypes;
@@ -291,6 +307,15 @@ struct SceneObjects {
     float *d_tp2zs;
     CUDA_CONTROL(upload<float>(d_tp2zs, tp2zs, hlength));
     sobjs.tp2zs = d_tp2zs;
+  }
+  __host__ SceneObjects to_device() {
+    // device copy
+    SceneObjects sobjs(hlength);
+
+    to_device_group(sobjs);
+    to_device_surface(sobjs);
+    to_device_material(sobjs);
+    to_device_texture(sobjs);
     //
     unsigned char *d_tdata;
     CUDA_CONTROL(upload<unsigned char>(d_tdata, tdata,
@@ -345,7 +370,6 @@ struct SceneObjects {
                     bpps[obj_index], tindices[obj_index]);
     return imp;
   }
-
   __host__ __device__ MatTextureParams
   get_mat_params(int obj_index) {
     //
@@ -381,61 +405,71 @@ struct SceneObjects {
   }
   __device__ ScenePrimitive get(int obj_index,
                                 curandState *loc) {
-
     HittableParams hp = get_hittable_params(obj_index);
     MatTextureParams mp = get_mat_params(obj_index);
-
     ScenePrimitive sobj(hp, mp, loc);
-
     return sobj;
   }
+  __host__ __device__ SceneGroup
+  get_group(int group_index) {
+    int group_start = group_starts[group_index];
+    int group_size = group_sizes[group_index];
+    GroupType gtype =
+        static_cast<GroupType>(gtypes[group_index]);
+    int group_id = group_ids[group_index];
+    ScenePrimitive *prims = new ScenePrimitive[group_size];
+    int gcount = 0;
+    for (int i = group_start; i < group_size; i++) {
+      ScenePrimitive prim = get(i);
+      prims[gcount] = prim;
+      gcount++;
+    }
+    SceneGroup sg(group_id, gcount, gtype, prims);
+    return sg;
+  }
+  __device__ SceneGroup get_group(int group_index,
+                                  curandState *loc) {
+    int group_start = group_starts[group_index];
+    int group_size = group_sizes[group_index];
+    GroupType gtype =
+        static_cast<GroupType>(gtypes[group_index]);
+    int group_id = group_ids[group_index];
+    ScenePrimitive *prims = new ScenePrimitive[group_size];
+    int gcount = 0;
+    for (int i = group_start; i < group_size; i++) {
+      ScenePrimitive prim = get(i, loc);
+      prims[gcount] = prim;
+      gcount++;
+    }
+    SceneGroup sg(group_id, gcount, gtype, prims);
+    return sg;
+  }
 
-  __host__ __device__ int count_group(int group_id) {
-    int group_count = 0;
-    for (int i = 0; i < hlength; i++) {
-      int gid = group_ids[i];
-      if (gid == group_id) {
-        group_count++;
-      }
-    }
-    return group_count;
-  }
   __host__ __device__ void
-  mk_hittable_group(GroupType gtype, Hittable **&hs,
-                    int sindex, int eindex) {}
-  __host__ __device__ void
-  mk_group(GroupType gtype, int group_id, Hittable *&h) {
-    //
-    int gcount = count_group(group_id);
-    int current_surface = 0;
-    Hittable **hgroup = new Hittable *[gcount];
-    for (int i = 0; i < hlength; i++) {
-      if (group_id == group_ids[i]) {
-        Hittable *surface;
-        ScenePrimitive p = get(i);
-        p.to_obj(surface);
-        hgroup[current_surface] = surface;
-        current_surface++;
-      }
-    }
-  }
   to_hittable_list(Hittable **&hs) {
-    for (int i = 0; i < hlength; i++) {
-
-      ScenePrimitive s = get(i);
-      Hittable *h;
-      s.to_obj(h);
-      hs[i] = h;
+    hs = new Hittable *[nb_group];
+    SceneGroup *groups = new SceneGroup[nb_group];
+    for (int i = 0; i < nb_group; i++) {
+      SceneGroup gr = get_group(i);
+      groups[i] = gr;
+    }
+    order_scene(groups, nb_group);
+    for (int i = 0; i < nb_group; i++) {
+      hs[i] = groups[i].to_hittable_group();
     }
   }
+
   __device__ void to_hittable_list(Hittable **&hs,
                                    curandState *loc) {
-    for (int i = 0; i < hlength; i++) {
-
-      ScenePrimitive s = get(i, loc);
-      Hittable *h;
-      s.to_obj_device(h);
-      hs[i] = h;
+    hs = new Hittable *[nb_group];
+    SceneGroup *groups = new SceneGroup[nb_group];
+    for (int i = 0; i < nb_group; i++) {
+      SceneGroup gr = get_group(i, loc);
+      groups[i] = gr;
+    }
+    order_scene(groups, nb_group);
+    for (int i = 0; i < nb_group; i++) {
+      hs[i] = groups[i].to_hittable_group();
     }
   }
 };

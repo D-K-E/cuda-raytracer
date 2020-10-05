@@ -7,6 +7,7 @@
 #include <nextweek/material.cuh>
 #include <nextweek/ray.cuh>
 #include <nextweek/sphere.cuh>
+#include <nextweek/triangle.cuh>
 
 #include <nextweek/sceneparam.cuh>
 #include <nextweek/scenetype.cuh>
@@ -255,15 +256,15 @@ struct ScenePrimitive {
   __device__ void to_obj_device(Hittable *&ht) { ht = h; }
 };
 __host__ __device__ int
-farthest_index(const ScenePrimitive &g,
-               const ScenePrimitive *&g, int nb_g) {
+farthest_index(const ScenePrimitive &g, ScenePrimitive *&gs,
+               int nb_g) {
   //
   float max_dist = FLT_MIN;
   int max_dist_index = 0;
   Aabb tb;
   g.h->bounding_box(0.0f, 0.0f, tb);
   Point3 g_center = tb.center();
-  for (int i = 0; i < nb_group; i++) {
+  for (int i = 0; i < nb_g; i++) {
     Aabb t;
     gs[i].h->bounding_box(0.0f, 0.0f, t);
     Point3 scene_center = t.center();
@@ -277,11 +278,11 @@ farthest_index(const ScenePrimitive &g,
 }
 // implementing list structure from
 // Foley et al. 2013, p. 1081
-void order_scene(ScenePrimitive *&sp, int nb_prims) {
+__host__ __device__ void order_scene(ScenePrimitive *&sp, int nb_prims) {
   for (int i = 0; i < nb_prims - 1; i += 2) {
     ScenePrimitive s = sp[i];
     int fgi = farthest_index(s, sp, nb_prims);
-    swap(gs, i + 1, fgi);
+    swap(sp, i + 1, fgi);
   }
 }
 

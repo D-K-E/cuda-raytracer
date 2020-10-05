@@ -142,7 +142,6 @@ void make_empty_host_cornell_box(
   hs = thrust::device_malloc<Hittable *>(nb_hittable);
 }
 
-
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
   int WIDTH = 320;
