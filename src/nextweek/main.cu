@@ -87,6 +87,63 @@ Camera makeCam(int WIDTH, int HEIGHT) {
   return cam;
 }
 
+void make_image(thrust::device_ptr<unsigned char> &imdata,
+                thrust::device_ptr<int> &imwidths,
+                thrust::device_ptr<int> &imhs,
+                thrust::device_ptr<int> &imch) {
+  std::vector<const char *> impaths = {"media/earthmap.png",
+                                       "media/lsjimg.png"};
+  std::vector<int> ws, hes, nbChannels;
+  int totalSize;
+  std::vector<unsigned char> imdata_h;
+  imread(impaths, ws, hes, nbChannels, imdata_h, totalSize);
+  ////// thrust::device_ptr<unsigned char> imda =
+  //////    thrust::device_malloc<unsigned char>(imd.size);
+  unsigned char *h_ptr = imdata_h.data();
+
+  // --------------------- image ------------------------
+  upload_to_device(imdata, h_ptr, imdata_h.size());
+
+  int *ws_ptr = ws.data();
+
+  upload_to_device(imwidths, ws_ptr, ws.size());
+
+  int *hs_ptr = hes.data();
+  upload_to_device(imhs, hs_ptr, hes.size());
+
+  int *nb_ptr = nbChannels.data();
+  upload_to_device(imch, nb_ptr, nbChannels.size());
+}
+
+void make_final_world(
+    thrust::device_ptr<Hittable *> &hs,
+    thrust::device_ptr<Hittables *> &world) {
+  world = thrust::device_malloc<Hittables *>(1);
+  CUDA_CONTROL(cudaGetLastError());
+  // CUDA_CONTROL(upload(veri));
+  int box_size = 6;
+  int side_box_nb = 20;
+  int sphere_nb = 10;
+  int nb_hittable = side_box_nb;
+  nb_hittable *= side_box_nb;
+  nb_hittable *= box_size;
+  nb_hittable += sphere_nb;
+  // nb_hittable += 1;
+  hs = thrust::device_malloc<Hittable *>(nb_hittable);
+}
+
+void make_cornell(thrust::device_ptr<Hittable *> &hs,
+                  thrust::device_ptr<Hittables *> &world) {
+  world = thrust::device_malloc<Hittables *>(1);
+  CUDA_CONTROL(cudaGetLastError());
+  // CUDA_CONTROL(upload(veri));
+  int box_nb = 3;
+  int box_size = 6;
+  int nb_hittable = box_nb * box_size + 3;
+  // nb_hittable += 1;
+  hs = thrust::device_malloc<Hittable *>(nb_hittable);
+}
+
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
   int WIDTH = 320;
@@ -131,57 +188,34 @@ int main() {
   // declare world
   thrust::device_ptr<Hittables *> world =
       thrust::device_malloc<Hittables *>(1);
-  CUDA_CONTROL(cudaGetLastError());
-  int box_size = 6;
-  int side_box_nb = 20;
-  int sphere_nb = 10;
-  int nb_hittable = side_box_nb;
-  nb_hittable *= side_box_nb;
-  nb_hittable *= box_size;
-  nb_hittable += sphere_nb;
-  // nb_hittable += 1;
-  thrust::device_ptr<Hittable *> hs =
-      thrust::device_malloc<Hittable *>(nb_hittable);
+  thrust::device_ptr<Hittable *> hs;
+  // make_final_world(hs, world);
+  make_cornell(hs, world);
+
   CUDA_CONTROL(cudaGetLastError());
 
   // declara imdata
-  std::vector<const char *> impaths = {"media/earthmap.png",
-                                       "media/lsjimg.png"};
-  std::vector<int> ws, hes, nbChannels;
-  int totalSize;
-  std::vector<unsigned char> imdata_h;
-  imread(impaths, ws, hes, nbChannels, imdata_h, totalSize);
-  ////// thrust::device_ptr<unsigned char> imda =
-  //////    thrust::device_malloc<unsigned char>(imd.size);
-  unsigned char *h_ptr = imdata_h.data();
 
   // --------------------- image ------------------------
-  thrust::device_ptr<unsigned char> imdata;
-  upload_to_device(imdata, h_ptr, imdata_h.size());
-
-  int *ws_ptr = ws.data();
-
-  thrust::device_ptr<int> imwidths;
-  upload_to_device(imwidths, ws_ptr, ws.size());
-
-  thrust::device_ptr<int> imhs;
-  int *hs_ptr = hes.data();
-  upload_to_device(imhs, hs_ptr, hes.size());
-
-  thrust::device_ptr<int> imch; // nb channels
-  int *nb_ptr = nbChannels.data();
-  upload_to_device(imch, nb_ptr, nbChannels.size());
+  // thrust::device_ptr<unsigned char> imdata;
+  // thrust::device_ptr<int> imwidths;
+  // thrust::device_ptr<int> imhs;
+  // thrust::device_ptr<int> imch; // nb channels
+  // make_image(imdata, imwidths, imhs, imch);
 
   CUDA_CONTROL(cudaGetLastError());
+  make_empty_cornell_box<<<1, 1>>>(
+      thrust::raw_pointer_cast(world),
+      thrust::raw_pointer_cast(hs));
 
-  make_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
-                       thrust::raw_pointer_cast(hs),
-                       thrust::raw_pointer_cast(randState2),
-                       side_box_nb,
-                       thrust::raw_pointer_cast(imdata),
-                       thrust::raw_pointer_cast(imwidths),
-                       thrust::raw_pointer_cast(imhs),
-                       thrust::raw_pointer_cast(imch));
+  // make_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
+  //                     thrust::raw_pointer_cast(hs),
+  //                     thrust::raw_pointer_cast(randState2),
+  //                     side_box_nb,
+  //                     thrust::raw_pointer_cast(imdata),
+  //                     thrust::raw_pointer_cast(imwidths),
+  //                     thrust::raw_pointer_cast(imhs),
+  //                     thrust::raw_pointer_cast(imch));
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
 
@@ -232,13 +266,14 @@ int main() {
   }
   CUDA_CONTROL(cudaDeviceSynchronize());
   CUDA_CONTROL(cudaGetLastError());
-  free_world(fb,                           //
-             world,                        //
-             hs,                           //
-             imdata, imch, imhs, imwidths, //
-             randState1,                   //
-             randState2);
+  // free_world(fb,                           //
+  //           world,                        //
+  //           hs,                           //
+  //           imdata, imch, imhs, imwidths, //
+  //           randState1,                   //
+  //           randState2);
   // free_world(fb, world, hs, randState1, randState2);
+  free_empty_cornell(fb, world, hs, randState1, randState2);
   CUDA_CONTROL(cudaGetLastError());
 
   cudaDeviceReset();

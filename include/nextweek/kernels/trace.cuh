@@ -67,7 +67,8 @@ __global__ void render(Vec3 *fb, int maximum_x,
     float v = float(j + curand_uniform(&localS)) /
               float(maximum_y);
     Ray r = cam.get_ray(u, v, &localS);
-    rcolor += ray_color(r, world, randState, bounceNb);
+    //
+    rcolor += ray_color(r, world, &localS, bounceNb);
   }
   // fix the bounce depth
   randState[pixel_index] = localS;

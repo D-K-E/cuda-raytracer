@@ -248,6 +248,9 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     groups[6] = g7; //
     groups[7] = g8; //
 
+    //
+    order_scene(groups, 8);
+
     world[0] = new Hittables(groups, group_size);
   }
 }
@@ -316,7 +319,7 @@ __global__ void make_empty_cornell_box(Hittables **world,
     Material *red = new Lambertian(Color(.65, .05, .05));
     Material *blue = new Lambertian(Color(.05, .05, .65));
     Material *white = new Lambertian(Color(.73, .73, .73));
-    Material *green = new Lambertian(Color(.12, .45, .15));
+    Material *green = new Metal(Color(.12, .45, .15), 0.3);
     Material *light = new DiffuseLight(Color(15, 15, 15));
 
     // ----------- Groups --------------------
@@ -380,6 +383,8 @@ __global__ void make_empty_cornell_box(Hittables **world,
     groups[group_count] = smoke_box2;
 
     group_count++;
+
+    // order_scene(groups, group_count);
 
     world[0] = new Hittables(groups, group_count);
   }

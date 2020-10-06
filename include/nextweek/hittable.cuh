@@ -274,5 +274,42 @@ public:
   bool hasbox;
   Aabb bbox;
 };
+__host__ __device__ int
+farthest_index(Hittable **&hs, Hittable *&h, int nb_h) {
+  //
+  float max_dist = FLT_MIN;
+  int max_dist_index = 0;
+  Aabb tb;
+  h->bounding_box(0.0f, 0.0f, tb);
+  Point3 g_center = tb.center();
+  for (int i = 0; i < nb_h; i++) {
+    Aabb t;
+    hs[i]->bounding_box(0.0f, 0.0f, t);
+    Point3 scene_center = t.center();
+    float dist = distance(g_center, scene_center);
+    if (dist > max_dist) {
+      max_dist = dist;
+      max_dist_index = i;
+    }
+  }
+  return max_dist_index;
+}
+__host__ __device__ void swap_hit(Hittable **&hs, int i,
+                                  int j) {
+  Hittable *h = hs[i];
+  hs[i] = hs[j];
+  hs[j] = h;
+}
+
+// implementing list structure from
+// Foley et al. 2013, p. 1081
+__host__ __device__ void order_scene(Hittable **&hs,
+                                     int nb_h) {
+  for (int i = 0; i < nb_h - 1; i += 2) {
+    Hittable *h = hs[i];
+    int fgi = farthest_index(hs, h, nb_h);
+    swap_hit(hs, i + 1, fgi);
+  }
+}
 
 #endif

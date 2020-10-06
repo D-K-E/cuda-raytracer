@@ -101,7 +101,7 @@ public:
   }
 
 public:
-  Hittable *boundary;
+  const Hittable *boundary;
   Material *phase_function;
   float neg_inv_density;
   curandState *rState;
