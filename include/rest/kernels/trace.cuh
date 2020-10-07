@@ -20,8 +20,6 @@ __device__ Color ray_color(const Ray &r, Hittables **world,
   Ray current_ray = r;
   Vec3 current_attenuation = Vec3(1.0f);
   Vec3 result = Vec3(0.0f);
-  //
-  //
 
   while (bounceNb > 0) {
     HitRecord rec;
@@ -41,7 +39,7 @@ __device__ Color ray_color(const Ray &r, Hittables **world,
         bounceNb--;
         //
 
-        // Pdf *p0 = new HittablePdf(light_shape, rec.p);
+        Pdf *p0 = new HittablePdf(light_shape, rec.p);
         // Pdf *p1 = new CosinePdf(rec.normal);
         // MixturePdf p(p0, p1);
         // scattered =
