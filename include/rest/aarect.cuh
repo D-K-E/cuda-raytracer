@@ -14,8 +14,10 @@ struct AxisInfo {
   int notAligned;
 };
 
-float get_pdf_surface(Vec3 dir, Vec3 normal, float dist,
-                      float area) {
+__host__ __device__ float get_pdf_surface(Vec3 dir,
+                                          Vec3 normal,
+                                          float dist,
+                                          float area) {
   //
   float dist_squared = dist * dist / dir.squared_length();
   float cosine = fabs(dot(dir, normal) / dir.length());
@@ -112,6 +114,25 @@ public:
     output_box = Aabb(p1, p2);
     return true;
   }
+
+  __device__ float
+  pdf_value(const Point3 &orig,
+            const Point3 &v) const override {
+    HitRecord rec;
+    if (!hit(Ray(orig, v), 0.001, FLT_MAX, rec))
+      return 0;
+
+    float area = (a1 - a0) * (b1 - b0);
+    return get_pdf_surface(v, rec.normal, rec.t, area);
+  }
+
+  __device__ Vec3 random(const Point3 &orig,
+                         curandState *loc) const override {
+    Point3 random_point =
+        Point3(random_float(loc, a0, a1), k,
+               random_float(loc, b0, b1));
+    return random_point - orig;
+  }
 };
 
 class XYRect : public AaRect {
@@ -137,29 +158,6 @@ public:
                              Material *mat)
       : AaRect(_x0, _x1, _z0, _z1, _k, mat, Vec3(0, 1, 0)),
         x0(_x0), x1(_x1), z0(_z0), z1(_z1) {}
-  __device__ float pdf_value(const Point3 &origin,
-                             const Vec3 &dir) const {
-    HitRecord rec;
-    if (!hit(Ray(origin, dir), 0.001, FLT_MAX, rec))
-      return 0;
-
-    float area = (x1 - x0) * (z1 - z0);
-    // auto distance_squared = rec.dist * rec.dist *
-    // length_squared(dir);
-    // auto cosine = fabs(dot(dir, rec.normal) /
-    // length(dir));
-
-    // return distance_squared / (cosine * area);
-    return get_pdf_surface(dir, rec.normal, rec.t, area);
-  }
-
-  __device__ Vec3 random(const Point3 &origin,
-                         curandState *loc) const {
-    Point3 random_point =
-        Point3(random_float(loc, x0, x1), k,
-               random_float(loc, z0, z1));
-    return random_point - origin;
-  }
 };
 class YZRect : public AaRect {
 public:

@@ -313,6 +313,7 @@ __device__ void make_box(Hittable **s, int &i,
 
 __global__ void
 make_empty_cornell_box(Hittables **world, Hittable **ss,
+                       Hittable *light_shape,
                        curandState *randState) {
   // declare objects
   if (threadIdx.x == 0 && blockIdx.x == 0) {
@@ -388,6 +389,9 @@ make_empty_cornell_box(Hittables **world, Hittable **ss,
     order_scene(groups, group_count);
 
     world[0] = new Hittables(groups, group_count);
+    Material *mt = nullptr;
+    Hittable *light_shape =
+        new XZRect(213, 343, 227, 332, 554, mt);
   }
 }
 
@@ -395,6 +399,7 @@ void free_empty_cornell(
     thrust::device_ptr<Vec3> &fb,
     thrust::device_ptr<Hittables *> &world,
     thrust::device_ptr<Hittable *> &hs,
+    thrust::device_ptr<Hittable> &lshape,
     thrust::device_ptr<curandState> randState1,
     thrust::device_ptr<curandState> randState2) {
 
@@ -404,6 +409,7 @@ void free_empty_cornell(
   CUDA_CONTROL(cudaGetLastError());
   thrust::device_free(hs);
   CUDA_CONTROL(cudaGetLastError());
+  thrust::device_free(lshape);
 
   CUDA_CONTROL(cudaGetLastError());
   thrust::device_free(randState2);

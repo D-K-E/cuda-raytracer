@@ -120,15 +120,17 @@ void make_final_world(
 }
 
 void make_cornell(thrust::device_ptr<Hittable *> &hs,
-                  thrust::device_ptr<Hittables *> &world) {
-  world = thrust::device_malloc<Hittables *>(1);
+                  thrust::device_ptr<Hittables *> &world,
+                  thrust::device_ptr<Hittable> &lshape) {
   CUDA_CONTROL(cudaGetLastError());
   // CUDA_CONTROL(upload(veri));
   int box_nb = 3;
   int box_size = 6;
-  int nb_hittable = box_nb * box_size + 3;
+  int nb_hittable = box_nb * box_size + 5;
   // nb_hittable += 1;
   hs = thrust::device_malloc<Hittable *>(nb_hittable);
+  lshape = thrust::device_malloc<Hittable>(1);
+  world = thrust::device_malloc<Hittables *>(1);
 }
 
 int main() {
@@ -173,11 +175,12 @@ int main() {
   CUDA_CONTROL(cudaDeviceSynchronize());
 
   // declare world
-  thrust::device_ptr<Hittables *> world =
-      thrust::device_malloc<Hittables *>(1);
+  thrust::device_ptr<Hittables *> world;
+
   thrust::device_ptr<Hittable *> hs;
+  thrust::device_ptr<Hittable> lshape;
   // make_final_world(hs, world);
-  make_cornell(hs, world);
+  make_cornell(hs, world, lshape);
 
   CUDA_CONTROL(cudaGetLastError());
 
@@ -194,6 +197,7 @@ int main() {
   make_empty_cornell_box<<<1, 1>>>(
       thrust::raw_pointer_cast(world),
       thrust::raw_pointer_cast(hs),
+      thrust::raw_pointer_cast(lshape),
       thrust::raw_pointer_cast(randState2));
 
   // make_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
@@ -226,6 +230,7 @@ int main() {
       thrust::raw_pointer_cast(fb), WIDTH, HEIGHT,
       SAMPLE_NB, BOUNCE_NB, cam,
       thrust::raw_pointer_cast(world),
+      thrust::raw_pointer_cast(lshape),
       thrust::raw_pointer_cast(randState1));
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
@@ -261,7 +266,8 @@ int main() {
   //           randState1,                   //
   //           randState2);
   // free_world(fb, world, hs, randState1, randState2);
-  free_empty_cornell(fb, world, hs, randState1, randState2);
+  free_empty_cornell(fb, world, hs, lshape, randState1,
+                     randState2);
   CUDA_CONTROL(cudaGetLastError());
 
   cudaDeviceReset();

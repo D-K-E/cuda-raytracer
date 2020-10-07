@@ -99,6 +99,16 @@ public:
   __host__ __device__ virtual bool
   bounding_box(float t0, float t1,
                Aabb &output_box) const = 0;
+  __device__ virtual float
+  pdf_value(const Point3 &o, const Point3 &v) const {
+    return 0.0f;
+  }
+
+  __device__ virtual Vec3 random(const Vec3 &v,
+                                 curandState *loc) const {
+    //
+    return Vec3(1.0f, 0.0f, 0.0f);
+  }
 };
 __device__ bool hit_to_hittables(Hittable **hs, int si,
                                  int ei, const Ray &r,
