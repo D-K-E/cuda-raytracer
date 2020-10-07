@@ -12,10 +12,14 @@ add_executable(
     oneweekend.out
     "src/oneweekend/main.cu"
 )
-
 add_executable(
     nextweek.out
     "src/nextweek/main.cu"
+)
+
+add_executable(
+    rest.out
+    "src/rest/main.cu"
 )
 
 add_executable(
@@ -49,8 +53,17 @@ set_target_properties( nextweek.out
 set_target_properties(nextweek.out
     PROPERTIES LINKER_LANGUAGE CUDA)
 
+set_target_properties( rest.out
+    PROPERTIES CUDA_SEPARABLE_COMPILATION ON 
+                     )
+set_target_properties(rest.out
+    PROPERTIES LINKER_LANGUAGE CUDA)
+
+
 install(TARGETS oneweekend.out DESTINATION "${PROJECT_SOURCE_DIR}/bin")
 
 install(TARGETS nextweek.out DESTINATION "${PROJECT_SOURCE_DIR}/bin")
+
+install(TARGETS rest.out DESTINATION "${PROJECT_SOURCE_DIR}/bin")
 
 install(TARGETS main_c.out DESTINATION "${PROJECT_SOURCE_DIR}/bin")
