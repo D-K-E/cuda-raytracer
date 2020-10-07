@@ -58,7 +58,7 @@ public:
   __host__ __device__ virtual float
   scattering_pdf(const Ray &r_in, const HitRecord &rec,
                  const Ray &scattered) const {
-    return 1.0f;
+    return 0.0f;
   }
   __host__ __device__ virtual Color
   emitted(float u, float v, const Point3 &p) const {

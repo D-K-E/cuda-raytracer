@@ -320,7 +320,7 @@ make_empty_cornell_box(Hittables **world, Hittable **ss,
     Material *red = new Lambertian(Color(.65, .05, .05));
     Material *blue = new Lambertian(Color(.05, .05, .65));
     Material *white = new Lambertian(Color(.73, .73, .73));
-    Material *green = new Metal(Color(.12, .45, .15), 0.3);
+    Material *green = new Lambertian(Color(.12, .45, .15));
     Material *light = new DiffuseLight(Color(15, 15, 15));
 
     // ----------- Groups --------------------
@@ -360,12 +360,12 @@ make_empty_cornell_box(Hittables **world, Hittable **ss,
     Hittable *tall_box =
         new HittableGroup(ss, b1.start_index, b1.end_index);
 
-    Hittable *smoke_box1 = new ConstantMedium(
-        tall_box, 0.01, Color(0.8f, 0.2, 0.4), randState);
+    // Hittable *smoke_box1 = new ConstantMedium(
+    //    tall_box, 0.01, Color(0.8f, 0.2, 0.4), randState);
 
     group_count++;
 
-    groups[group_count] = smoke_box1;
+    groups[group_count] = tall_box;
 
     obj_count++;
     Point3 bp3(0.0f);

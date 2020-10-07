@@ -279,6 +279,18 @@ __device__ Vec3 random_in_hemisphere(curandState *lo,
     return -in_unit_sphere;
 }
 
+__device__ Vec3 random_cosine_direction(curandState *lo) {
+  auto r1 = curand_uniform(lo);
+  auto r2 = curand_uniform(lo);
+  auto z = sqrt(1 - r2);
+
+  auto phi = 2 * M_PI * r1;
+  auto x = cos(phi) * sqrt(r2);
+  auto y = sin(phi) * sqrt(r2);
+
+  return Vec3(x, y, z);
+}
+
 using Point3 = Vec3;
 using Color = Vec3;
 

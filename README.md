@@ -62,7 +62,7 @@ I don't remember the settings for this one. But it includes perlin noise so.
 <img src="images/final3.png" alt="final screenshot third version"/>
 
 
-The one in below at 800x450 in 49.5292 seconds with 500 samples and 500
+The one in below at 800x450 in ~189 seconds with 500 samples and 100
 bounces.
 <img src="images/final4.png" alt="final screenshot fourth version"/>
 
