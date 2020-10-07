@@ -7,6 +7,7 @@
 
 class Pdf {
 public:
+  __host__ __device__ Pdf() {}
   __device__ virtual ~Pdf() {}
 
   __device__ virtual float
@@ -18,7 +19,7 @@ public:
 
 class CosinePdf : public Pdf {
 public:
-  __device__ CosinePdf(const Vec3 &w) {
+  __host__ __device__ CosinePdf(const Vec3 &w) {
     uvw.build_from_w(w);
   }
 

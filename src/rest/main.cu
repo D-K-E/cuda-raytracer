@@ -225,12 +225,16 @@ int main() {
 
   // declare camera
   Camera cam = makeCam(WIDTH, HEIGHT);
+  //
+  thrust::device_ptr<Pdf *> pdfs;
+  pdfs = thrust::device_malloc<Pdf *>(3);
 
   render<<<blocks, threads>>>(
       thrust::raw_pointer_cast(fb), WIDTH, HEIGHT,
       SAMPLE_NB, BOUNCE_NB, cam,
       thrust::raw_pointer_cast(world),
       thrust::raw_pointer_cast(lshape),
+      thrust::raw_pointer_cast(pdfs),
       thrust::raw_pointer_cast(randState1));
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
@@ -268,6 +272,7 @@ int main() {
   // free_world(fb, world, hs, randState1, randState2);
   free_empty_cornell(fb, world, hs, lshape, randState1,
                      randState2);
+  thrust::device_free(pdfs);
   CUDA_CONTROL(cudaGetLastError());
 
   cudaDeviceReset();

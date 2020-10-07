@@ -16,7 +16,8 @@
  */
 __device__ Color ray_color(const Ray &r, Hittables **world,
                            Hittable *light_shape,
-                           curandState *loc, int bounceNb) {
+                           Pdf **pdfs, curandState *loc,
+                           int bounceNb) {
   Ray current_ray = r;
   Vec3 current_attenuation = Vec3(1.0f);
   Vec3 result = Vec3(0.0f);
@@ -39,13 +40,16 @@ __device__ Color ray_color(const Ray &r, Hittables **world,
         bounceNb--;
         //
 
-        Pdf *p0 = new HittablePdf(light_shape, rec.p);
-        // Pdf *p1 = new CosinePdf(rec.normal);
-        // MixturePdf p(p0, p1);
+        HittablePdf hpdf(light_shape, rec.p);
+
+        CosinePdf cpdf(rec.normal);
+        pdfs[0] = static_cast<Pdf *>(&cpdf);
+        pdfs[1] = static_cast<Pdf *>(&hpdf);
+        MixturePdf p(pdfs[0], pdfs[1]);
         // scattered =
-        //     Ray(rec.p, p.generate(loc),
-        //     current_ray.time());
-        // //
+        //    Ray(rec.p, p.generate(loc),
+        //    current_ray.time());
+        //
         // float pdf_val = p.value(scattered.direction());
         float s_pdf = rec.mat_ptr->scattering_pdf(
             current_ray, rec, scattered);
@@ -71,7 +75,7 @@ __global__ void render(Vec3 *fb, int maximum_x,
                        int maximum_y, int sample_nb,
                        int bounceNb, Camera dcam,
                        Hittables **world,
-                       Hittable *light_shape,
+                       Hittable *light_shape, Pdf **pdfs,
                        curandState *randState) {
   int i = threadIdx.x + blockIdx.x * blockDim.x;
   int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -90,8 +94,8 @@ __global__ void render(Vec3 *fb, int maximum_x,
               float(maximum_y);
     Ray r = cam.get_ray(u, v, &localS);
     //
-    rcolor +=
-        ray_color(r, world, light_shape, &localS, bounceNb);
+    rcolor += ray_color(r, world, light_shape, pdfs,
+                        &localS, bounceNb);
   }
   // fix the bounce depth
   randState[pixel_index] = localS;
