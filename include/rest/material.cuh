@@ -2,6 +2,7 @@
 #define MATERIAL_CUH
 
 #include <rest/hittable.cuh>
+#include <rest/onb.cuh>
 #include <rest/ray.cuh>
 #include <rest/texture.cuh>
 #include <rest/utils.cuh>
@@ -75,15 +76,18 @@ public:
   __host__ __device__ Lambertian(Texture *a) { albedo = a; }
 
   __host__ __device__ ~Lambertian() { delete albedo; }
-  __device__ bool
-  scatter(const Ray &r_in, const HitRecord &rec,
-          Color &attenuation, Ray &scattered, float &pdf,
-          curandState *local_rand_state) const override {
-    Vec3 target =
-        random_in_hemisphere(local_rand_state, rec.normal);
-    scattered = Ray(rec.p, target, r_in.time());
+  __device__ bool scatter(const Ray &r_in,
+                          const HitRecord &rec,
+                          Color &attenuation,
+                          Ray &scattered, float &pdf,
+                          curandState *loc) const override {
+    Onb uvw;
+    uvw.build_from_w(rec.normal);
+    auto direction =
+        uvw.local(random_cosine_direction(loc));
+    scattered = Ray(rec.p, to_unit(direction), r_in.time());
     attenuation = albedo->value(rec.u, rec.v, rec.p);
-    pdf = 0.5 / M_PI;
+    pdf = dot(uvw.w(), scattered.direction()) / M_PI;
     return true;
   }
   __host__ __device__ float

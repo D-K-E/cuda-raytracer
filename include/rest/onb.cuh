@@ -1,7 +1,7 @@
 #ifndef ONB_CUH
 #define ONB_CUH
 
-#include <rest/external.cuh>
+#include <rest/external.hpp>
 #include <rest/ray.cuh>
 #include <rest/vec3.cuh>
 
