@@ -15,9 +15,8 @@
   @param Hittables** world pointer to list of hittables
  */
 __device__ Color ray_color(const Ray &r, Hittables **world,
-                           Hittable *light_shape,
-                           Pdf **pdfs, curandState *loc,
-                           int bounceNb) {
+                           XZRect *light_shape, Pdf **pdfs,
+                           curandState *loc, int bounceNb) {
   Ray current_ray = r;
   Vec3 current_attenuation = Vec3(1.0f);
   Vec3 result = Vec3(0.0f);
@@ -40,17 +39,19 @@ __device__ Color ray_color(const Ray &r, Hittables **world,
         bounceNb--;
         //
 
-        HittablePdf hpdf(light_shape, rec.p);
+        HittablePdf<XZRect> hpdf(*light_shape, rec.p);
 
         CosinePdf cpdf(rec.normal);
-        pdfs[0] = static_cast<Pdf *>(&cpdf);
-        pdfs[1] = static_cast<Pdf *>(&hpdf);
-        MixturePdf p(pdfs[0], pdfs[1]);
-        // scattered =
-        //    Ray(rec.p, p.generate(loc),
-        //    current_ray.time());
+        // Vec3 s_dir1 = cpdf.generate(loc);
+        // Vec3 s_dir2 = hpdf.generate(loc);
+        // Pdf *pdf1 = static_cast<Pdf *>(&cpdf);
+        // Pdf *pdf2 = static_cast<Pdf *>(&hpdf);
+        MixturePdf<HittablePdf<XZRect>, CosinePdf> mpdf(
+            hpdf, cpdf);
+        Vec3 s_dir = mpdf.generate(loc);
+        scattered = Ray(rec.p, s_dir, current_ray.time());
         //
-        // float pdf_val = p.value(scattered.direction());
+        pdf_val = mpdf.value(scattered.direction());
         float s_pdf = rec.mat_ptr->scattering_pdf(
             current_ray, rec, scattered);
         //
@@ -59,7 +60,6 @@ __device__ Color ray_color(const Ray &r, Hittables **world,
         current_attenuation *=
             attenuation * s_pdf / pdf_val;
         current_ray = scattered;
-
         //
       } else {
         result += (current_attenuation * emittedColor);
@@ -75,7 +75,7 @@ __global__ void render(Vec3 *fb, int maximum_x,
                        int maximum_y, int sample_nb,
                        int bounceNb, Camera dcam,
                        Hittables **world,
-                       Hittable *light_shape, Pdf **pdfs,
+                       XZRect *light_shape, Pdf **pdfs,
                        curandState *randState) {
   int i = threadIdx.x + blockIdx.x * blockDim.x;
   int j = threadIdx.y + blockIdx.y * blockDim.y;

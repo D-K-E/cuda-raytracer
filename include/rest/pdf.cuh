@@ -14,7 +14,7 @@ public:
   value(const Vec3 &direction) const = 0;
 
   __device__ virtual Vec3
-  generate(curandState *loc) const = 0;
+  generate(curandState *&loc) const = 0;
 };
 
 class CosinePdf : public Pdf {
@@ -30,7 +30,7 @@ public:
   }
 
   __device__ Vec3
-  generate(curandState *loc) const override {
+  generate(curandState *&loc) const override {
     return uvw.local(random_cosine_direction(loc));
   }
 
@@ -38,50 +38,51 @@ public:
   Onb uvw;
 };
 
+template <class T = Hittable>
 class HittablePdf : public Pdf {
 public:
-  __host__ __device__ HittablePdf(Hittable *&p,
+  __host__ __device__ HittablePdf(T &p,
                                   const Point3 &origin)
       : ptr(p), o(origin) {}
 
   __device__ float
   value(const Vec3 &direction) const override {
-    return ptr->pdf_value(o, direction);
+    return ptr.pdf_value(o, direction);
   }
 
   __device__ Vec3
-  generate(curandState *loc) const override {
-    return ptr->random(o, loc);
+  generate(curandState *&loc) const override {
+    return ptr.random(o, loc);
   }
 
 public:
   Point3 o;
-  Hittable *ptr;
+  T ptr;
 };
 
+template <class T = Pdf, class U = Pdf>
 class MixturePdf : public Pdf {
 public:
-  __host__ __device__ MixturePdf(Pdf *&p0, Pdf *&p1) {
-    p[0] = p0;
-    p[1] = p1;
-  }
+  __host__ __device__ MixturePdf(T &_p0, U &_p1)
+      : p1(_p0), p2(_p1) {}
 
   __device__ float
   value(const Vec3 &direction) const override {
-    return 0.5 * p[0]->value(direction) +
-           0.5 * p[1]->value(direction);
+    return 0.5 * p1.value(direction) +
+           0.5 * p2.value(direction);
   }
 
   __device__ Vec3
-  generate(curandState *loc) const override {
-    if (curand_uniform(loc) < 0.5)
-      return p[0]->generate(loc);
+  generate(curandState *&loc) const override {
+    if (curand_uniform(loc) < 0.5f)
+      return p1.generate(loc);
     else
-      return p[1]->generate(loc);
+      return p2.generate(loc);
   }
 
 public:
-  Pdf *p[2];
+  T p1;
+  U p2;
 };
 
 #endif

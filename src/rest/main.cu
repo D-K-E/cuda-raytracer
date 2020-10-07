@@ -121,7 +121,7 @@ void make_final_world(
 
 void make_cornell(thrust::device_ptr<Hittable *> &hs,
                   thrust::device_ptr<Hittables *> &world,
-                  thrust::device_ptr<Hittable> &lshape) {
+                  thrust::device_ptr<XZRect> &lshape) {
   CUDA_CONTROL(cudaGetLastError());
   // CUDA_CONTROL(upload(veri));
   int box_nb = 3;
@@ -129,7 +129,7 @@ void make_cornell(thrust::device_ptr<Hittable *> &hs,
   int nb_hittable = box_nb * box_size + 5;
   // nb_hittable += 1;
   hs = thrust::device_malloc<Hittable *>(nb_hittable);
-  lshape = thrust::device_malloc<Hittable>(1);
+  lshape = thrust::device_malloc<XZRect>(1);
   world = thrust::device_malloc<Hittables *>(1);
 }
 
@@ -178,7 +178,7 @@ int main() {
   thrust::device_ptr<Hittables *> world;
 
   thrust::device_ptr<Hittable *> hs;
-  thrust::device_ptr<Hittable> lshape;
+  thrust::device_ptr<XZRect> lshape;
   // make_final_world(hs, world);
   make_cornell(hs, world, lshape);
 

@@ -12,6 +12,22 @@ struct AxisInfo {
   int aligned1;
   int aligned2;
   int notAligned;
+  __host__ __device__ AxisInfo() {}
+  __host__ __device__ AxisInfo(Vec3 anormal) {
+    if (anormal.z() == 1.0) {
+      aligned1 = 0;
+      aligned2 = 1;
+      notAligned = 2;
+    } else if (anormal.x() == 1.0) {
+      aligned1 = 1;
+      aligned2 = 2;
+      notAligned = 0;
+    } else if (anormal.y() == 1.0) {
+      aligned1 = 0;
+      aligned2 = 2;
+      notAligned = 1;
+    }
+  }
 };
 
 __host__ __device__ float get_pdf_surface(Vec3 dir,
@@ -42,19 +58,7 @@ public:
                              Material *mat, Vec3 anormal)
       : a0(a_0), a1(a_1), b0(b_0), b1(b_1), k(_k),
         mat_ptr(mat), axis_normal(anormal) {
-    if (anormal.z() == 1.0) {
-      ax.aligned1 = 0;
-      ax.aligned2 = 1;
-      ax.notAligned = 2;
-    } else if (anormal.x() == 1.0) {
-      ax.aligned1 = 1;
-      ax.aligned2 = 2;
-      ax.notAligned = 0;
-    } else if (anormal.y() == 1.0) {
-      ax.aligned1 = 0;
-      ax.aligned2 = 2;
-      ax.notAligned = 1;
-    }
+    ax = AxisInfo(axis_normal);
   }
   __device__ bool hit(const Ray &r, float t0, float t1,
                       HitRecord &rec) const override {
