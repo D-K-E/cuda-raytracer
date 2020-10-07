@@ -47,7 +47,7 @@ All of the images below are realized with the following specs:
 - Memory Bus Width (bits): 128
 - Peak Memory Bandwidth (GB/s): 80.16
 
-WARNING: MOST OF THE TIMINGS HERE ARE WRONG, see `Known Issues`.
+**WARNING: MOST OF THE TIMINGS HERE ARE WRONG**, see `Known Issues`.
 
 Renders the screenshot below at 800 x 600 in 64.8672 seconds with 50 samples
 per pixel and 50 bounces per ray.
