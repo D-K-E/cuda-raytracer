@@ -294,11 +294,13 @@ farthest_index(Hittable **&hs, Hittable *&h, int nb_h) {
   }
   return max_dist_index;
 }
-__host__ __device__ void swap_hit(Hittable **&hs, int i,
-                                  int j) {
-  Hittable *h = hs[i];
-  hs[i] = hs[j];
-  hs[j] = h;
+
+__host__ __device__ void
+swap_hit(Hittable *&h1, Hittable *&h2, Hittable *&temp) {
+  // xor swap
+  temp = h1;
+  h1 = h2;
+  h2 = temp;
 }
 
 // implementing list structure from
@@ -308,7 +310,8 @@ __host__ __device__ void order_scene(Hittable **&hs,
   for (int i = 0; i < nb_h - 1; i += 2) {
     Hittable *h = hs[i];
     int fgi = farthest_index(hs, h, nb_h);
-    swap_hit(hs, i + 1, fgi);
+    Hittable *h1;
+    swap_hit(hs[i + 1], hs[fgi], h1);
   }
 }
 

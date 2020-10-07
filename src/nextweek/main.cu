@@ -146,12 +146,12 @@ void make_cornell(thrust::device_ptr<Hittable *> &hs,
 
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
-  int WIDTH = 320;
+  int WIDTH = 480;
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
   int BLOCK_WIDTH = 32;
   int BLOCK_HEIGHT = 18;
-  int SAMPLE_NB = 50;
-  int BOUNCE_NB = 10;
+  int SAMPLE_NB = 40;
+  int BOUNCE_NB = 20;
 
   get_device_props();
 
@@ -189,33 +189,33 @@ int main() {
   thrust::device_ptr<Hittables *> world =
       thrust::device_malloc<Hittables *>(1);
   thrust::device_ptr<Hittable *> hs;
-  // make_final_world(hs, world);
-  make_cornell(hs, world);
+  make_final_world(hs, world);
+  // make_cornell(hs, world);
 
   CUDA_CONTROL(cudaGetLastError());
 
   // declara imdata
 
   // --------------------- image ------------------------
-  // thrust::device_ptr<unsigned char> imdata;
-  // thrust::device_ptr<int> imwidths;
-  // thrust::device_ptr<int> imhs;
-  // thrust::device_ptr<int> imch; // nb channels
-  // make_image(imdata, imwidths, imhs, imch);
+  thrust::device_ptr<unsigned char> imdata;
+  thrust::device_ptr<int> imwidths;
+  thrust::device_ptr<int> imhs;
+  thrust::device_ptr<int> imch; // nb channels
+  make_image(imdata, imwidths, imhs, imch);
 
   CUDA_CONTROL(cudaGetLastError());
-  make_empty_cornell_box<<<1, 1>>>(
-      thrust::raw_pointer_cast(world),
-      thrust::raw_pointer_cast(hs));
+  // make_empty_cornell_box<<<1, 1>>>(
+  //    thrust::raw_pointer_cast(world),
+  //    thrust::raw_pointer_cast(hs),
+  //    thrust::raw_pointer_cast(randState2));
 
-  // make_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
-  //                     thrust::raw_pointer_cast(hs),
-  //                     thrust::raw_pointer_cast(randState2),
-  //                     side_box_nb,
-  //                     thrust::raw_pointer_cast(imdata),
-  //                     thrust::raw_pointer_cast(imwidths),
-  //                     thrust::raw_pointer_cast(imhs),
-  //                     thrust::raw_pointer_cast(imch));
+  make_world<<<1, 1>>>(thrust::raw_pointer_cast(world),
+                       thrust::raw_pointer_cast(hs),
+                       thrust::raw_pointer_cast(randState2),
+                       20, thrust::raw_pointer_cast(imdata),
+                       thrust::raw_pointer_cast(imwidths),
+                       thrust::raw_pointer_cast(imhs),
+                       thrust::raw_pointer_cast(imch));
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
 
@@ -266,14 +266,15 @@ int main() {
   }
   CUDA_CONTROL(cudaDeviceSynchronize());
   CUDA_CONTROL(cudaGetLastError());
-  // free_world(fb,                           //
-  //           world,                        //
-  //           hs,                           //
-  //           imdata, imch, imhs, imwidths, //
-  //           randState1,                   //
-  //           randState2);
+  free_world(fb,                           //
+             world,                        //
+             hs,                           //
+             imdata, imch, imhs, imwidths, //
+             randState1,                   //
+             randState2);
   // free_world(fb, world, hs, randState1, randState2);
-  free_empty_cornell(fb, world, hs, randState1, randState2);
+  // free_empty_cornell(fb, world, hs, randState1,
+  // randState2);
   CUDA_CONTROL(cudaGetLastError());
 
   cudaDeviceReset();

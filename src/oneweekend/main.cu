@@ -86,7 +86,7 @@ __global__ void render(Vec3 *fb, int maximum_x,
     float v = float(j + curand_uniform(&localS)) /
               float(maximum_y);
     Ray r = cam[0]->get_ray(u, v, &localS);
-    rcolor += ray_color(r, world, randState, bounceNb);
+    rcolor += ray_color(r, world, &localS, bounceNb);
   }
   // fix the bounce depth
   randState[pixel_index] = localS;
@@ -170,12 +170,12 @@ __global__ void free_world(Hittables **world, Hittable **ss,
 
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
-  int WIDTH = 320;
+  int WIDTH = 800;
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
-  int BLOCK_WIDTH = 10;
-  int BLOCK_HEIGHT = 10;
-  int SAMPLE_NB = 30;
-  int BOUNCE_NB = 20;
+  int BLOCK_WIDTH = 32;
+  int BLOCK_HEIGHT = 18;
+  int SAMPLE_NB = 50;
+  int BOUNCE_NB = 50;
 
   std::cerr << "Resim boyutumuz " << WIDTH << "x" << HEIGHT
             << std::endl;

@@ -14,6 +14,7 @@
 #include <thrust/device_ptr.h>
 #include <thrust/device_vector.h>
 #include <thrust/random.h>
+#include <thrust/swap.h>
 #include <time.h>
 
 #include <math.h>

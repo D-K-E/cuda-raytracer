@@ -72,7 +72,7 @@ __device__ void make_moving_sphere(Hittable **&ss,
   start_index = si;
 
   // --------- moving sphere -----------
-  Point3 cent1(400, 400, 200);
+  Point3 cent1(200, 150, 200);
   Point3 cent2 = cent1 + Point3(30.0f, 0.0f, 0.0f);
   Material *moving_sphere_material =
       new Lambertian(Color(0.7f, 0.3f, 0.1f));
@@ -89,14 +89,14 @@ __device__ void make_two_sphere(Hittable **&ss, int &ocount,
                                 int &end_index) {
   const int si = ocount;
   start_index = si;
-  Hittable *sp1 = new Sphere(Point3(260, 150, 45), 50,
+  Hittable *sp1 = new Sphere(Point3(560, 150, 45), 50,
                              new Dielectric(1.5f));
   ss[ocount] = sp1;
   end_index = ocount + 1;
   ocount = end_index;
 
   Hittable *sp2 =
-      new Sphere(Point3(0, 150, 145), 50,
+      new Sphere(Point3(500, 150, 145), 50,
                  new Metal(Color(0.8f, 0.8f, 0.8f), 10.0f));
   ss[ocount] = sp2;
   end_index = ocount + 1;
@@ -108,7 +108,7 @@ __device__ void make_subsurface(Hittable **&ss, int &ocount,
                                 int &end_index) {
   const int si = ocount;
   start_index = si;
-  Hittable *sp3 = new Sphere(Point3(360, 150, 145), 70,
+  Hittable *sp3 = new Sphere(Point3(620, 400, 145), 70,
                              new Dielectric(1.5));
   ss[ocount] = sp3;
   end_index = ocount + 1;
@@ -121,7 +121,7 @@ __device__ void make_volumetric(Hittable **&ss, int &ocount,
   const int si = ocount;
   start_index = si;
   Hittable *sp4 =
-      new Sphere(Point3(300, 250, 145), 70,
+      new Sphere(Point3(400, 400, 145), 70,
                  new Lambertian(Color(0.5, 0.1, 0.7)));
 
   ss[ocount] = sp4;
@@ -143,7 +143,7 @@ __device__ void make_images(Hittable **&ss, int &ocount,
 
   Material *lamb2 = new Lambertian(imtex1);
   Hittable *spImg =
-      new Sphere(Point3(650, 400, 200), 100, lamb2);
+      new Sphere(Point3(220, 400, 200), 100, lamb2);
   ss[ocount] = spImg;
   end_index = ocount + 1;
   ocount = end_index;
@@ -152,7 +152,7 @@ __device__ void make_images(Hittable **&ss, int &ocount,
       imdata, widths, heights, bytes_per_pixels, 0);
   Material *lamb3 = new Lambertian(imtex2);
   Hittable *spImg2 =
-      new Sphere(Point3(250, 400, 200), 100, lamb3);
+      new Sphere(Point3(0, 400, 200), 100, lamb3);
 
   ss[ocount] = spImg2;
   end_index = ocount + 1;
@@ -169,7 +169,7 @@ __device__ void make_noise(Hittable **&ss, int &ocount,
   NoiseTexture *ntxt = new NoiseTexture(0.1, randState);
   Material *met2 = new Lambertian(ntxt);
   Hittable *noise_sp =
-      new Sphere(Point3(220, 280, 300), 80, met2);
+      new Sphere(Point3(-250, 400, 300), 80, met2);
   ss[ocount] = noise_sp;
   end_index = ocount + 1;
   ocount = end_index;
@@ -249,7 +249,7 @@ __global__ void make_world(Hittables **world, Hittable **ss,
     groups[7] = g8; //
 
     //
-    order_scene(groups, 8);
+    order_scene(groups, group_size);
 
     world[0] = new Hittables(groups, group_size);
   }
@@ -311,8 +311,9 @@ __device__ void make_box(Hittable **s, int &i,
                     mptr);
 }
 
-__global__ void make_empty_cornell_box(Hittables **world,
-                                       Hittable **ss) {
+__global__ void
+make_empty_cornell_box(Hittables **world, Hittable **ss,
+                       curandState *randState) {
   // declare objects
   if (threadIdx.x == 0 && blockIdx.x == 0) {
 
@@ -359,11 +360,11 @@ __global__ void make_empty_cornell_box(Hittables **world,
     Hittable *tall_box =
         new HittableGroup(ss, b1.start_index, b1.end_index);
 
-    curandState randState;
-    curand_init(obj_count, 0, 0, &randState);
     Hittable *smoke_box1 = new ConstantMedium(
-        tall_box, 0.01, Color(0.8f, 0.2, 0.4), &randState);
+        tall_box, 0.01, Color(0.8f, 0.2, 0.4), randState);
+
     group_count++;
+
     groups[group_count] = smoke_box1;
 
     obj_count++;
@@ -377,14 +378,13 @@ __global__ void make_empty_cornell_box(Hittables **world,
     Hittable *short_box =
         new HittableGroup(ss, b2.start_index, b2.end_index);
     Hittable *smoke_box2 = new ConstantMedium(
-        short_box, 0.01, Color(0.8f, 0.3, 0.8), &randState);
+        short_box, 0.01, Color(0.8f, 0.3, 0.8), randState);
 
     group_count++;
     groups[group_count] = smoke_box2;
 
     group_count++;
-
-    // order_scene(groups, group_count);
+    order_scene(groups, group_count);
 
     world[0] = new Hittables(groups, group_count);
   }

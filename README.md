@@ -47,8 +47,9 @@ All of the images below are realized with the following specs:
 - Memory Bus Width (bits): 128
 - Peak Memory Bandwidth (GB/s): 80.16
 
+WARNING: MOST OF THE TIMINGS HERE ARE WRONG, see `Known Issues`.
 
-Renders the screenshot below at 800 x 600 in 32.3065 seconds with 50 samples
+Renders the screenshot below at 800 x 600 in 64.8672 seconds with 50 samples
 per pixel and 50 bounces per ray.
 
 <img src="images/final.png" alt="final screenshot"/>
@@ -69,6 +70,11 @@ The one in below at 640x360 in 106.365 seconds with 500 samples and 500
 bounces
 <img src="images/cornell_smoke.png" alt="final screenshot fifth version"/>
 
+The one in below at 480x270 in 101.325 seconds with 40 samples and 20
+bounces
+<img src="images/final5.png" alt="final screenshot sixth version"/>
+
+
 ## Features
 
 - Most of what you get in Ray Tracing In One Weekend and in Next Week.
@@ -79,16 +85,31 @@ bounces
 
 - Constant Medium Volume Rendering
 
+- A simple GPU friendly acceleration structure, a.k.a DA List, Foley et. al.,
+  2013, p. 1081.
+
 ## Planned
 
 - Asset loading with assimp.
-- A simple acceleration structure.
 - Hopefully pdf handling in near feature.
 - Background handling.
 
 
 ## Known Issues
 
-- A Better RNG.
+I managed to fix the rng problem around nw-final branch.  It was such a simple
+fix that i kind of feel stupid to let it sit there for so long.
+
+For previous branches, just change the line
+
+- `rcolor += ray_color(r, world, randState, bounceNb);` to
+
+- `rcolor += ray_color(r, world, &localS, bounceNb);`
+
+This increased significantly the rendering times so all of the rendering times
+above are compromised. By significantly, I mean it increases about two times
+more. 
+
+
 
 Cheers
