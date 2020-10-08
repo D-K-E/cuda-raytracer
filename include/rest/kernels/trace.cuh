@@ -15,7 +15,7 @@
   @param Hittables** world pointer to list of hittables
  */
 __device__ Color ray_color(const Ray &r, Hittables **world,
-                           XZRect *light_shape, Pdf **pdfs,
+                           FlipFace *light_shape,
                            curandState *loc, int bounceNb) {
   Ray current_ray = r;
   Vec3 current_attenuation = Vec3(1.0f);
@@ -39,14 +39,14 @@ __device__ Color ray_color(const Ray &r, Hittables **world,
         bounceNb--;
         //
 
-        HittablePdf<XZRect> hpdf(*light_shape, rec.p);
+        HittablePdf<FlipFace> hpdf(*light_shape, rec.p);
 
         CosinePdf cpdf(rec.normal);
         // Vec3 s_dir1 = cpdf.generate(loc);
         // Vec3 s_dir2 = hpdf.generate(loc);
         // Pdf *pdf1 = static_cast<Pdf *>(&cpdf);
         // Pdf *pdf2 = static_cast<Pdf *>(&hpdf);
-        MixturePdf<HittablePdf<XZRect>, CosinePdf> mpdf(
+        MixturePdf<HittablePdf<FlipFace>, CosinePdf> mpdf(
             hpdf, cpdf);
         Vec3 s_dir = mpdf.generate(loc);
         scattered = Ray(rec.p, s_dir, current_ray.time());
@@ -75,7 +75,7 @@ __global__ void render(Vec3 *fb, int maximum_x,
                        int maximum_y, int sample_nb,
                        int bounceNb, Camera dcam,
                        Hittables **world,
-                       XZRect *light_shape, Pdf **pdfs,
+                       FlipFace *light_shape,
                        curandState *randState) {
   int i = threadIdx.x + blockIdx.x * blockDim.x;
   int j = threadIdx.y + blockIdx.y * blockDim.y;
@@ -94,8 +94,8 @@ __global__ void render(Vec3 *fb, int maximum_x,
               float(maximum_y);
     Ray r = cam.get_ray(u, v, &localS);
     //
-    rcolor += ray_color(r, world, light_shape, pdfs,
-                        &localS, bounceNb);
+    rcolor +=
+        ray_color(r, world, light_shape, &localS, bounceNb);
   }
   // fix the bounce depth
   randState[pixel_index] = localS;

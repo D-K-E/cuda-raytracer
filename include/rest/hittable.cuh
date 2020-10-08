@@ -284,6 +284,31 @@ public:
   bool hasbox;
   Aabb bbox;
 };
+class FlipFace : public Hittable {
+public:
+  __host__ __device__ FlipFace(Hittable *p) : ptr(p) {}
+
+  __device__ bool hit(const Ray &r, float t_min,
+                      float t_max,
+                      HitRecord &rec) const override {
+
+    if (!ptr->hit(r, t_min, t_max, rec))
+      return false;
+
+    rec.front_face = !rec.front_face;
+    return true;
+  }
+
+  __host__ __device__ bool
+  bounding_box(float t0, float t1,
+               Aabb &output_box) const override {
+    return ptr->bounding_box(t0, t1, output_box);
+  }
+
+public:
+  Hittable *ptr;
+};
+
 __host__ __device__ int
 farthest_index(Hittable **&hs, Hittable *&h, int nb_h) {
   //

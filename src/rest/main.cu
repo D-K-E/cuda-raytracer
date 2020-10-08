@@ -121,7 +121,7 @@ void make_final_world(
 
 void make_cornell(thrust::device_ptr<Hittable *> &hs,
                   thrust::device_ptr<Hittables *> &world,
-                  thrust::device_ptr<XZRect> &lshape) {
+                  thrust::device_ptr<FlipFace> &lshape) {
   CUDA_CONTROL(cudaGetLastError());
   // CUDA_CONTROL(upload(veri));
   int box_nb = 3;
@@ -129,18 +129,18 @@ void make_cornell(thrust::device_ptr<Hittable *> &hs,
   int nb_hittable = box_nb * box_size + 5;
   // nb_hittable += 1;
   hs = thrust::device_malloc<Hittable *>(nb_hittable);
-  lshape = thrust::device_malloc<XZRect>(1);
+  lshape = thrust::device_malloc<FlipFace>(1);
   world = thrust::device_malloc<Hittables *>(1);
 }
 
 int main() {
   float aspect_ratio = 16.0f / 9.0f;
-  int WIDTH = 320;
+  int WIDTH = 640;
   int HEIGHT = static_cast<int>(WIDTH / aspect_ratio);
   int BLOCK_WIDTH = 32;
   int BLOCK_HEIGHT = 18;
-  int SAMPLE_NB = 100;
-  int BOUNCE_NB = 50;
+  int SAMPLE_NB = 1000;
+  int BOUNCE_NB = 10;
 
   get_device_props();
 
@@ -178,7 +178,7 @@ int main() {
   thrust::device_ptr<Hittables *> world;
 
   thrust::device_ptr<Hittable *> hs;
-  thrust::device_ptr<XZRect> lshape;
+  thrust::device_ptr<FlipFace> lshape;
   // make_final_world(hs, world);
   make_cornell(hs, world, lshape);
 
@@ -226,15 +226,12 @@ int main() {
   // declare camera
   Camera cam = makeCam(WIDTH, HEIGHT);
   //
-  thrust::device_ptr<Pdf *> pdfs;
-  pdfs = thrust::device_malloc<Pdf *>(3);
 
   render<<<blocks, threads>>>(
       thrust::raw_pointer_cast(fb), WIDTH, HEIGHT,
       SAMPLE_NB, BOUNCE_NB, cam,
       thrust::raw_pointer_cast(world),
       thrust::raw_pointer_cast(lshape),
-      thrust::raw_pointer_cast(pdfs),
       thrust::raw_pointer_cast(randState1));
   CUDA_CONTROL(cudaGetLastError());
   CUDA_CONTROL(cudaDeviceSynchronize());
@@ -272,7 +269,6 @@ int main() {
   // free_world(fb, world, hs, randState1, randState2);
   free_empty_cornell(fb, world, hs, lshape, randState1,
                      randState2);
-  thrust::device_free(pdfs);
   CUDA_CONTROL(cudaGetLastError());
 
   cudaDeviceReset();
